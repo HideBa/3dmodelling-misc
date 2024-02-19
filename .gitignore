@@ -32,3 +32,6 @@
 *.app
 /data
 .DS_Store
+build/
+.chache/
+.idea

@@ -11,6 +11,7 @@
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel;
 typedef CGAL::Exact_predicates_tag Tag;
+
 struct FaceInfo {
   bool interior, processed;
   FaceInfo() {
@@ -28,11 +29,8 @@ typedef CGAL::Constrained_Delaunay_triangulation_2<
     Kernel, TriangulationDataStructure, Tag>
     Triangulation;
 
-const std::string input_file =
-    "/Users/ken/Downloads/hw1/NL.IMBAG.Pand.0503100000032914-0.obj"; // the
-                                                                     // faculty
-                                                                     // building
-const std::string output_file = "/Users/ken/Downloads/faculty.obj";
+const std::string input_file = "./data/NL.IMBAG.Pand.0503100000000010-0.obj";
+const std::string output_file = "./out/test.obj";
 
 struct Vertex {
   double x, y, z;
@@ -57,7 +55,7 @@ int main(int argc, const char *argv[]) {
 
     // Parse line by line
     while (getline(input_stream, line)) {
-      //      std::cout << line << std::endl;
+      std::cout << line << std::endl;
 
       std::istringstream line_stream(line);
       char line_type;
@@ -86,19 +84,21 @@ int main(int argc, const char *argv[]) {
   }
 
   // Print vertices
-  //  int i = 0;
-  //  for (auto const &vertex: vertices) {
-  //    std::cout << "Vertex " << i++ << ": " << "(" << vertex.x << ", " <<
-  //    vertex.y << ", " << vertex.z << ")" << std::endl;
-  //  }
+  int i = 0;
+  for (auto const &vertex : vertices) {
+    std::cout << "Vertex " << i++ << ": "
+              << "(" << vertex.x << ", " << vertex.y << ", " << vertex.z << ")"
+              << std::endl;
+  }
 
   // Print faces
-  //  i = 0;
-  //  for (auto const &face: faces) {
-  //    std::cout << "Face " << i++ << ": ";
-  //    for (auto const &vertex: face.boundary) std::cout << " " << vertex;
-  //    std::cout << std::endl;
-  //  }
+  i = 0;
+  for (auto const &face : faces) {
+    std::cout << "Face " << i++ << ": ";
+    for (auto const &vertex : face.boundary)
+      std::cout << " " << vertex;
+    std::cout << std::endl;
+  }
 
   // Best fitting planes (to do)
 

@@ -35,3 +35,61 @@
 build/
 .chache/
 .idea
+# Compiled object files
+*.o
+*.obj
+
+# Compiled dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Executables
+*.exe
+*.out
+
+# Build directory
+build/
+
+# Dependency directories
+dependencies/
+
+# IDE specific files
+.vscode/
+.idea/
+
+# Generated files
+Makefile
+CMakeLists.txt.user
+# Compiled object files
+*.o
+
+# Executables
+*.exe
+*.out
+
+# Compiled libraries
+*.a
+*.lib
+
+# IDE files
+.vscode/
+.idea/
+
+# Build output directory
+build/
+
+# Dependency directories
+dependencies/
+
+# Generated files
+*.generated.cpp
+*.generated.h
+
+# macOS specific files
+.DS_Store
+
+# Windows specific files
+Thumbs.db
+# Ignore dir under cmake-build-debug
+cmake-build-debug/

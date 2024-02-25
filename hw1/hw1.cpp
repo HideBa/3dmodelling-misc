@@ -67,7 +67,7 @@ int main(int argc, const char *argv[]) {
 
     // Parse line by line
     while (getline(input_stream, line)) {
-      std::cout << line << std::endl;
+      //      std::cout << line << std::endl;
 
       std::istringstream line_stream(line);
       char line_type;
@@ -130,19 +130,79 @@ int main(int argc, const char *argv[]) {
   }
 
   // Triangulate faces (to do)
-  // Project to 2D plane
   for (auto &face : faces) {
+    std::vector<Point2> points;
     for (auto const &vertex_index : face.boundary) {
       Point2 projected_vertex = face.best_plane.to_2d(
           Point3(vertices[vertex_index].x, vertices[vertex_index].y,
                  vertices[vertex_index].z));
+      points.push_back(projected_vertex);
     }
-    std::cout << "best plane" << i++ << ": " << face.best_plane;
-    std::cout << std::endl;
+    Triangulation triangulation;
+    for (auto const &point : points) {
+      triangulation.insert(point);
+    }
+
+    triangulation.insert_constraint(points[0], points[1]);
+    for (size_t i = 0, next = 1; i < points.size();
+         i++, next = (i + 1) % points.size()) {
+      triangulation.insert_constraint(points[i], points[next]);
+    }
+
+    // print triangulation
+    for (auto it = triangulation.finite_edges_begin();
+         it != triangulation.finite_edges_end(); ++it) {
+      std::cout << "Edge: " << triangulation.segment(*it) << std::endl;
+    }
   }
 
   // Label triangulation (to do)
-
+  for (auto &face : faces) {
+    //      for (auto it = face.triangulation.finite_faces_begin();
+    //           it != face.triangulation.finite_faces_end(); ++it) {
+    //        if (face.triangulation.is_infinite(it)) {
+    //          it->info().interior = false;
+    //        } else {
+    //          it->info().interior = true;
+    //        }
+    //      }
+    std::list<Triangulation::Face_handle> to_check;
+    face.triangulation.infinite_face()->info().processed = true;
+    CGAL_assertion(face.triangulation.infinite_face()->info().processed ==
+                   true);
+    CGAL_assertion(face.triangulation.infinite_face()->info().interior ==
+                   false);
+    to_check.push_back(face.triangulation.infinite_face());
+    while (!to_check.empty()) {
+      CGAL_assertion(to_check.front()->info().processed == true);
+      for (int neighbour_i = 0; neighbour_i < 3; ++neighbour_i) {
+        Triangulation::Face_handle neighbour =
+            to_check.front()->neighbor(neighbour_i);
+        std::cout << "neighbour: " << *neighbour << std::endl;
+        if (neighbour->info().processed == true) {
+        } else {
+          to_check.front()->neighbor(neighbour_i)->info().processed = true;
+          //                    CGAL_assertion(
+          //                            to_check.front()->neighbor(neighbour_i)->info().interior
+          //                            == true);
+          //                    if (face.triangulation.is_constrained(
+          //                            Triangulation::Edge(to_check.front(),
+          //                            neighbour_i))) {
+          //                        to_check.front()->neighbor(neighbour_i)->info().interior
+          //                        =
+          //                                !to_check.front()->info().interior;
+          //                        to_check.push_back(to_check.front()->neighbor(neighbour_i));
+          //                    } else {
+          //                        to_check.front()->neighbor(neighbour_i)->info().interior
+          //                        =
+          //                                to_check.front()->info().interior;
+          //                        to_check.push_back(to_check.front()->neighbor(neighbour_i));
+          //                    }
+        }
+      }
+      to_check.pop_front();
+    }
+  }
   // Export triangles (to do)
 
   return 0;

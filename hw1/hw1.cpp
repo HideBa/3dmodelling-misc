@@ -41,7 +41,6 @@ const std::string output_file =
         "/Users/hideba/private-proj/tudelft/third-q/3dmodelling/"
         "assignments-3dmodelling/hw1/out/test.obj";
 
-// TODO: delete me later
 typedef Kernel::Point_3 Point3;
 typedef Kernel::Point_2 Point2;
 typedef Kernel::Triangle_3 Triangle3;
@@ -70,7 +69,6 @@ int main(int argc, const char *argv[]) {
 
         // Parse line by line
         while (getline(input_stream, line)) {
-            //      std::cout << line << std::endl;
 
             std::istringstream line_stream(line);
             char line_type;
@@ -98,25 +96,7 @@ int main(int argc, const char *argv[]) {
         }
     }
 
-    // Print vertices
-    // int i = 0;
-    // for (auto const &vertex : vertices) {
-    //   std::cout << "Vertex " << i++ << ": "
-    //             << "(" << vertex.x << ", " << vertex.y << ", " << vertex.z
-    //             <<
-    //             ")"
-    //             << std::endl;
-    // }
-
-    // // Print faces
-    // i = 0;
-    // for (auto const &face : faces) {
-    //   std::cout << "Face " << i++ << ": ";
-    //   for (auto const &vertex : face.boundary)
-    //     std::cout << " " << vertex;
-    //   std::cout << std::endl;
-    // }
-
+    // Find best fitting plane of each face
     for (auto &face: faces) {
         std::vector<Kernel::Point_3> points;
         for (int index: face.boundary) {
@@ -152,27 +132,13 @@ int main(int argc, const char *argv[]) {
             triangulation.insert_constraint(points[i], points[next]);
         }
 
-        // console list of vertices
-        for (auto it = triangulation.finite_vertices_begin();
-             it != triangulation.finite_vertices_end(); ++it) {
-            std::cout << "Vertex: " << it->point() << std::endl;
-        }
-
         face.triangulation = triangulation;
         Triangulation::Face_handle infinite_face = triangulation.infinite_face();
-        std::cout << "infinite face: " << *infinite_face << std::endl;
     }
 
     // Label triangulation (to do)
+    // Reference: https://github.com/tudelft3d/prepair/blob/03a6de6a28d9fcabe22f2598e89eb418d7767855/Polygon_repair.h
     for (auto &face: faces) {
-        //      for (auto it = face.triangulation.finite_faces_begin();
-        //           it != face.triangulation.finite_faces_end(); ++it) {
-        //        if (face.triangulation.is_infinite(it)) {
-        //          it->info().interior = false;
-        //        } else {
-        //          it->info().interior = true;
-        //        }
-        //      }
         std::list<Triangulation::Face_handle> to_check;
         face.triangulation.infinite_face()->info().processed = true;
         CGAL_assertion(face.triangulation.infinite_face()->info().processed ==
@@ -180,40 +146,77 @@ int main(int argc, const char *argv[]) {
         CGAL_assertion(face.triangulation.infinite_face()->info().interior ==
                        false);
         to_check.push_back(face.triangulation.infinite_face());
-
         while (!to_check.empty()) {
             CGAL_assertion(to_check.front()->info().processed == true);
             for (int neighbour_i = 0; neighbour_i < 3; ++neighbour_i) {
-//                Triangulation::Face_handle neighbour =
-//                        to_check.front()->neighbor(neighbour_i);
-//                bool is_constrained = face.triangulation.is_constrained(
-//                        Triangulation::Edge(to_check.front(), neighbour_i));
-//                std::cout << "is constrained: " << is_constrained << std::endl;
-//                FaceInfo &neighbour_info = neighbour->info();
-                std::cout << "neighbour_info: " << to_check.front()->neighbor(neighbour_i)->info().processed
-                          << std::endl;
-                if (!to_check.front()->neighbor(neighbour_i)->info().processed) {
+                if (to_check.front()->neighbor(neighbour_i)->info().processed) {
 
                 } else {
-                    std::cout << "neighbour_info: " << to_check.front()->neighbor(neighbour_i)->info().processed
-                              << std::endl;
                     to_check.front()->neighbor(neighbour_i)->info().processed = true;
-                    CGAL_assertion(to_check.front()->neighbor(neighbour_i)->info().processed ==
-                                   true);
-                    if (face.triangulation.is_constrained(Triangulation::Edge(to_check.front(), neighbour_i))) {
-                        to_check.front()->neighbor(neighbour_i)->info().interior = !to_check.front()->info().interior;
+                    CGAL_assertion(
+                            to_check.front()->neighbor(neighbour_i)->info().processed ==
+                            true);
+                    if (face.triangulation.is_constrained(
+                            Triangulation::Edge(to_check.front(), neighbour_i))) {
+                        to_check.front()->neighbor(neighbour_i)->info().interior =
+                                !to_check.front()->info().interior;
                         to_check.push_back(to_check.front()->neighbor(neighbour_i));
                     } else {
-                        to_check.front()->neighbor(neighbour_i)->info().interior = to_check.front()->info().interior;
+                        to_check.front()->neighbor(neighbour_i)->info().interior =
+                                to_check.front()->info().interior;
                         to_check.push_back(to_check.front()->neighbor(neighbour_i));
                     }
                 }
             }
             to_check.pop_front();
         }
-        // Export triangles (to do)
-        
-
     }
+
+    // Extract vertices and faces from each triangulation
+    std::vector<Vertex> vertices_out;
+    std::map<Point3, int> vertexIndexMap;
+    std::vector<std::array<int, 3>> faces_out;
+    int currentIndex = 1;
+
+    for (auto &face: faces) {
+        for (auto tri_face = face.triangulation.finite_faces_begin();
+             tri_face != face.triangulation.finite_faces_end(); ++tri_face) {
+            if (tri_face->info().interior) {
+                std::array<int, 3> faceIndices;
+
+                for (int i = 0; i < 3; ++i) {
+                    Point3 p = face.best_plane.to_3d(tri_face->vertex(i)->point());
+                    // Check if this vertex is already added
+                    if (vertexIndexMap.find(p) == vertexIndexMap.end()) {
+                        Vertex v{p.x(), p.y(), p.z()};
+                        vertices_out.push_back(v);
+                        vertexIndexMap[p] = currentIndex++;
+                    }
+                    faceIndices[i] = vertexIndexMap[p];
+                }
+
+                faces_out.push_back(faceIndices);
+            }
+        }
+    }
+
+    // Output to OBJ file
+    std::ofstream output_stream(output_file);
+    if (output_stream.is_open()) {
+        // Write vertices
+        for (auto const &vertex: vertices_out) {
+            output_stream << "v " << vertex.x << " " << vertex.y << " " << vertex.z
+                          << std::endl;
+        }
+        // Write faces
+        for (auto const &face: faces_out) {
+            output_stream << "f " << face[0] << " " << face[1] << " " << face[2]
+                          << std::endl;
+        }
+        output_stream.close();
+    } else {
+        std::cerr << "Could not open output file: " << output_file << std::endl;
+    }
+
     return 0;
 }

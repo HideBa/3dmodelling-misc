@@ -93,3 +93,5 @@ dependencies/
 Thumbs.db
 # Ignore dir under cmake-build-debug
 cmake-build-debug/
+.cache/
+data/

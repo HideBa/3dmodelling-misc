@@ -31,15 +31,15 @@ typedef CGAL::Constrained_Delaunay_triangulation_2<
         Kernel, TriangulationDataStructure, Tag>
         Triangulation;
 
-// const std::string input_file =
-//         "/Users/hideba/private-proj/tudelft/third-q/3dmodelling/"
-//         "assignments-3dmodelling/hw1/data/NL.IMBAG.Pand.0503100000000010-0.obj";
+//TODO: CHANGE ME!!
 const std::string input_file =
         "/Users/hideba/private-proj/tudelft/third-q/3dmodelling/"
-        "assignments-3dmodelling/hw1/data/NL.IMBAG.Pand.0503100000000138-0.obj";
+        "assignments-3dmodelling/hw1/data/cube.obj";
+//const std::string input_file =
+//        "/Users/hideba/private-proj/tudelft/third-q/3dmodelling/assignments-3dmodelling/hw1/data/bk.obj";
 const std::string output_file =
         "/Users/hideba/private-proj/tudelft/third-q/3dmodelling/"
-        "assignments-3dmodelling/hw1/out/test.obj";
+        "assignments-3dmodelling/hw1/out/cube.obj";
 
 typedef Kernel::Point_3 Point3;
 typedef Kernel::Point_2 Point2;
@@ -118,7 +118,6 @@ int main(int argc, const char *argv[]) {
         }
     }
 
-    int number_of_faces = 0;
     // Triangulate faces (to do)
     for (auto &face: faces) {
         std::vector<Point2> points;
@@ -141,9 +140,7 @@ int main(int argc, const char *argv[]) {
 
         face.triangulation = triangulation;
         Triangulation::Face_handle infinite_face = triangulation.infinite_face();
-        number_of_faces += triangulation.number_of_faces();
     }
-    std::cout << "number of finite faces" << number_of_faces << std::endl;
 
     // Label triangulation (to do)
     // Reference:
@@ -182,17 +179,6 @@ int main(int argc, const char *argv[]) {
         }
     }
 
-    int num_inteiors = 0;
-    for (auto &face: faces) {
-        Triangulation tris = face.triangulation;
-        for (auto face_handle = tris.finite_faces_begin();
-             face_handle != tris.finite_faces_end(); ++face_handle) {
-            if (face_handle->info().interior) {
-                num_inteiors++;
-            }
-        }
-    }
-    std::cout << "interior" << num_inteiors << std::endl;
 
     // Extract vertices and faces from each triangulation
     std::vector<Vertex> vertices_out;

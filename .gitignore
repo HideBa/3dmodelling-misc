@@ -95,3 +95,4 @@ Thumbs.db
 cmake-build-debug/
 .cache/
 data/
+include/

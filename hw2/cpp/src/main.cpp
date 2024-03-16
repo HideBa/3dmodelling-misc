@@ -18,10 +18,12 @@
 
 //-- https://github.com/nlohmann/json
 //-- used to read and write (City)JSON
+#include "PolyhedronBuilder.h"
 #include "json.hpp" //-- it is in the /include/ folder
 
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Polyhedron_3.h>
 #include <CGAL/Triangulation_face_base_with_info_2.h>
 #include <CGAL/Triangulation_vertex_base_2.h>
 #include <CGAL/linear_least_squares_fitting_3.h>
@@ -34,8 +36,15 @@ using namespace std;
 
 template <typename T> using vec = std::vector<T>;
 typedef Kernel::Point_3 Point3;
+typedef Kernel::Tetrahedron_3 Tetra3;
+typedef CGAL::Polyhedron_3<Kernel> Polyhedron3;
+typedef Polyhedron3::HalfedgeDS HalfedgeDS;
 
-json extract_ground_surface(json &j);
+json extract_lod0_2(json &j);
+
+std::vector<std::string> BUILDING_TYPE = {"Building", "BuildingPart",
+                                          "BuildingRoom", "BuildingStorey",
+                                          "BuildingUnit"};
 
 int main(int argc, const char *argv[]) {
   //-- will read the file passed as argument or twobuildings.city.json if
@@ -55,36 +64,7 @@ int main(int argc, const char *argv[]) {
   input >> j; //-- store the content of the file in a nlohmann::json object
   input.close();
 
-  //-- get total number of RoofSurface in the file
-  //  int noroofsurfaces = get_no_roof_surfaces(j);
-  //  std::cout << "Total RoofSurface: " << noroofsurfaces << std::endl;
-
-  //  list_all_vertices(j);
-  //
-  //  visit_roofsurfaces(j);
-
-  //-- print out the number of Buildings in the file
-  //  int nobuildings = 0;
-  //  for (auto &co : j["CityObjects"]) {
-  //    if (co["type"] == "Building") {
-  //      nobuildings += 1;
-  //    }
-  //  }
-  //  std::cout << "There are " << nobuildings << " Buildings in the file"
-  //            << std::endl;
-  //
-  //  //-- print out the number of vertices in the file
-  //  std::cout << "Number of vertices " << j["vertices"].size() <<
-  //  std::endl;
-
-  //-- add an attribute "volume"
-  //  for (auto &co : j["CityObjects"]) {
-  //    if (co["type"] == "Building") {
-  //      co["attributes"]["volume"] = rand();
-  //    }
-  //  }
-
-  json outJson = extract_ground_surface(j);
+  json outJson = extract_lod0_2(j);
 
   //-- write to disk the modified city model (out.city.json)
   std::ofstream o(outFineName);
@@ -94,7 +74,7 @@ int main(int argc, const char *argv[]) {
   return 0;
 }
 
-vec<double> transform(vec<double> vertices, vec<double> scales,
+vec<double> transform(vec<int> vertices, vec<double> scales,
                       vec<double> translates) {
   double v0 = vertices[0] * scales[0] + translates[0];
   double v1 = vertices[1] * scales[1] + translates[1];
@@ -103,20 +83,17 @@ vec<double> transform(vec<double> vertices, vec<double> scales,
   return transformed_vertices;
 };
 
-json extract_ground_surface(json &js) {
-  std::vector<std::string> buildingType = {"Building", "BuildingPart",
-                                           "BuildingRoom", "BuildingStorey",
-                                           "BuildingUnit"};
+json extract_lod0_2(json &js) {
 
   for (auto &co : js["CityObjects"].items()) {
-    if (std::find(buildingType.begin(), buildingType.end(),
-                  co.value()["type"]) != buildingType.end()) {
-      json lod02_geometry = {{"lod", "0.2"}, {"type", "MultiSurface"}};
+    if (std::find(BUILDING_TYPE.begin(), BUILDING_TYPE.end(),
+                  co.value()["type"]) != BUILDING_TYPE.end()) {
+      json lod0_2_geometry = {{"lod", "0.2"}, {"type", "MultiSurface"}};
       if (co.key() == "NL.IMBAG.Pand.0503100000030277-0") {
         cout << "same-=------------" << endl;
       }
       for (auto &g : co.value()["geometry"]) {
-        vec<vec<vec<int>>> lod02_boundaries;
+        vec<vec<vec<int>>> lod0_2_boundaries;
         for (auto &solid : g["boundaries"]) {
           //                    for (auto &faces: solid) {
           for (size_t i = 0; i < solid.size(); i++) {
@@ -129,7 +106,7 @@ json extract_ground_surface(json &js) {
               vec<Point3> points;
               vec<int> face_boundary;
               for (auto &boundary : face) {
-                vec<double> vertex = js["vertices"][boundary];
+                vec<int> vertex = js["vertices"][boundary];
                 vec<double> scales = js["transform"]["scale"];
                 vec<double> translates = js["transform"]["translate"];
                 vec<double> tv = transform(vertex, scales, translates);
@@ -166,15 +143,54 @@ json extract_ground_surface(json &js) {
                 surface_boundary.push_back(face_boundary);
               }
             }
-            lod02_boundaries.push_back(surface_boundary);
+            lod0_2_boundaries.push_back(surface_boundary);
           }
         }
-        lod02_geometry["boundaries"] = lod02_boundaries;
-        co.value()["geometry"].push_back(lod02_geometry);
+        lod0_2_geometry["boundaries"] = lod0_2_boundaries;
+        co.value()["geometry"].push_back(lod0_2_geometry);
       }
     }
   }
   return js;
+}
+
+json extract_lod1_2(json &js) {
+  const vec<double> scales = js["transform"]["scale"];
+  const vec<double> translates = js["transform"]["translate"];
+  for (auto &co : js["CityObjects"].items()) {
+    if (std::find(BUILDING_TYPE.begin(), BUILDING_TYPE.end(),
+                  co.value()["type"]) != BUILDING_TYPE.end()) {
+      json lod1_2_geometry = {{"lod", "1.2"}, {"type", "Solid"}};
+      for (auto &g : co.value()["geometry"]) {
+        double lod2_2_volume;
+        if (g["lod"] == "2.2") {
+          vec<vec<vec<vec<Point3>>>> shells_v;
+          for (auto &shell : g["boundaries"]) {
+            vec<vec<vec<Point3>>> shell_v;
+            for (auto &surface : shell) {
+              vec<vec<Point3>> surface_v;
+              for (auto &ring : surface) {
+                vec<Point3> ring_v;
+                for (auto &v : ring) {
+                  vec<int> vi = js["vertices"][v.get<int>()];
+                  vec<double> tv = transform(vi, scales, translates);
+                  Point3 point = Point3(tv[0], tv[1], tv[2]);
+                  ring_v.push_back(point);
+                }
+                surface_v.push_back(ring_v);
+              }
+              Polyhedron3 polyhedron;
+              PolyhedronBuilder<HalfedgeDS> builder(surface_v);
+              polyhedron.delegate(builder);
+              double vol = CGAL::Polygon_mesh_processing::volume(polyhedron);
+              shell_v.push_back(surface_v);
+            }
+            shells_v.push_back(shell_v);
+          }
+        }
+      }
+    }
+  }
 }
 // json extract_ground_surface(json &j) {
 //  std::vector<std::string> buildingType = {"Building", "BuildingPart",

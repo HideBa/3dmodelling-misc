@@ -134,7 +134,7 @@ json extract_ground_surface(json &js) {
                 vec<double> translates = js["transform"]["translate"];
                 vec<double> tv = transform(vertex, scales, translates);
                 Point3 point = Point3(tv[0], tv[1], tv[2]);
-                face_boundary.push_back(static_cast<int>(boundary));
+                face_boundary.push_back(boundary);
                 if (end(points) - begin(points) < 3) {
                   points.push_back(point);
                 }

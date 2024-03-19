@@ -45,6 +45,8 @@ json extract_lod0_2(json &j);
 
 json lod0_2(json &j);
 
+json lod1_2(json &j);
+
 json extract_lod1_2(json &j);
 
 std::vector<std::string> BUILDING_TYPE = {"Building", "BuildingPart",
@@ -55,13 +57,21 @@ int main(int argc, const char *argv[]) {
     //-- will read the file passed as argument or twobuildings.city.json if
     // nothing is passed
 
-    const char *filename =
-            (argc > 1) ? argv[1] : "../../data/tudcampus.city.json";
-    const char *outFineName =
-            (argc > 2) ? argv[2] : "../../out/out_tud.city.json";
 //    const char *filename =
-//            (argc > 1) ? argv[1] : "../../data/twobuildings.city.json";
-//    const char *outFineName = (argc > 2) ? argv[?2] : "../../out/out.city.json";
+//            (argc > 1) ? argv[1] : "../../data/tudcampus.city.json";
+//    const char *outFineName =
+//            (argc > 2) ? argv[2] : "../../out/out_tud.city.json";
+    const char *filename =
+            (argc > 1) ? argv[1] : "../../data/twobuildings.city.json";
+    const char *outFineName = (argc > 2) ? argv[2] : "../../out/out.city.json";
+//    const char *filename =
+//            (argc > 1) ? argv[1] : "../../data/specialcase_2.city.json";
+//    const char *outFineName =
+//            (argc > 2) ? argv[2] : "../../out/specialcase_2.city.json";
+//    const char *filename =
+//            (argc > 1) ? argv[1] : "../../data/specialcase_3.city.json";
+//    const char *outFineName =
+//            (argc > 2) ? argv[2] : "../../out/specialcase_3.city.json";
     std::cout << "Processing: " << filename << std::endl;
     std::ifstream input(filename);
     json j;
@@ -69,7 +79,6 @@ int main(int argc, const char *argv[]) {
     input.close();
 
     json lod0_2_json = lod0_2(j);
-//    json lod0_2_json = extract_lod0_2(j);
 
 //    json outJson = extract_lod1_2(lod0_2_json);
 
@@ -123,7 +132,13 @@ json lod0_2(json &js) {
                             }
 
                         }
-                        lod0_2_boundaries.push_back(shell[lower_surface.first]);
+                        vec<vec<int>> rev_surface = shell[lower_surface.first];
+                        // revese orientation of the inner array
+                        for (auto &innerVec: rev_surface) {
+                            reverse(innerVec.begin(), innerVec.end());
+                        }
+
+                        lod0_2_boundaries.push_back(rev_surface);
                     }
                 }
             }

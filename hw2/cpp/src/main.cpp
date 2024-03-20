@@ -18,7 +18,6 @@
 
 //-- https://github.com/nlohmann/json
 //-- used to read and write (City)JSON
-#include "PolyhedronBuilder.h"
 #include "json.hpp" //-- it is in the /include/ folder
 
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
@@ -57,21 +56,21 @@ int main(int argc, const char *argv[]) {
     //-- will read the file passed as argument or twobuildings.city.json if
     // nothing is passed
 
-//    const char *filename =
-//            (argc > 1) ? argv[1] : "../../data/tudcampus.city.json";
-//    const char *outFineName =
-//            (argc > 2) ? argv[2] : "../../out/out_tud.city.json";
+    //    const char *filename =
+    //            (argc > 1) ? argv[1] : "../../data/tudcampus.city.json";
+    //    const char *outFineName =
+    //            (argc > 2) ? argv[2] : "../../out/out_tud.city.json";
     const char *filename =
             (argc > 1) ? argv[1] : "../../data/twobuildings.city.json";
     const char *outFineName = (argc > 2) ? argv[2] : "../../out/out.city.json";
-//    const char *filename =
-//            (argc > 1) ? argv[1] : "../../data/specialcase_2.city.json";
-//    const char *outFineName =
-//            (argc > 2) ? argv[2] : "../../out/specialcase_2.city.json";
-//    const char *filename =
-//            (argc > 1) ? argv[1] : "../../data/specialcase_3.city.json";
-//    const char *outFineName =
-//            (argc > 2) ? argv[2] : "../../out/specialcase_3.city.json";
+    //    const char *filename =
+    //            (argc > 1) ? argv[1] : "../../data/specialcase_2.city.json";
+    //    const char *outFineName =
+    //            (argc > 2) ? argv[2] : "../../out/specialcase_2.city.json";
+    //    const char *filename =
+    //            (argc > 1) ? argv[1] : "../../data/specialcase_3.city.json";
+    //    const char *outFineName =
+    //            (argc > 2) ? argv[2] : "../../out/specialcase_3.city.json";
     std::cout << "Processing: " << filename << std::endl;
     std::ifstream input(filename);
     json j;
@@ -100,6 +99,15 @@ vec<double> transform(vec<int> vertices, vec<double> scales,
     return transformed_vertices;
 };
 
+vec<int> rev_transform(vec<double> vertices, vec<double> scales,
+                       vec<double> translates) {
+    int v0 = static_cast<int>((vertices[0] - translates[0]) / scales[0]);
+    int v1 = static_cast<int>((vertices[1] - translates[1]) / scales[1]);
+    int v2 = static_cast<int>((vertices[2] - translates[2]) / scales[2]);
+    vec<int> transformed_vertices = {v0, v1, v2};
+    return transformed_vertices;
+};
+
 json lod0_2(json &js) {
     for (auto &co: js["CityObjects"].items()) {
         if (std::find(BUILDING_TYPE.begin(), BUILDING_TYPE.end(),
@@ -109,20 +117,18 @@ json lod0_2(json &js) {
             vec<vec<vec<int>>> lod0_2_boundaries;
             for (auto &g: co.value()["geometry"]) {
                 for (auto &shell: g["boundaries"]) {
+                    pair<int, double> lower_surface;
                     for (size_t i = 0; i < shell.size(); i++) {
-                        pair<int, double> lower_surface;
                         json surface = shell[i];
                         vec<vec<int>> surface_boundary;
                         for (size_t j = 0; j < surface.size(); j++) {
                             vec<vec<double>> vertices;
-                            vec<Point3> points;
                             double total_z = 0;
                             for (auto &boundary: surface[j].get<vec<int>>()) {
                                 vec<int> vertex = js["vertices"][boundary];
                                 vec<double> scales = js["transform"]["scale"];
                                 vec<double> translates = js["transform"]["translate"];
                                 vec<double> tv = transform(vertex, scales, translates);
-                                Point3 point = Point3(tv[0], tv[1], tv[2]);
                                 vertices.push_back(tv);
                                 total_z = total_z + tv[2];
                             };
@@ -130,18 +136,17 @@ json lod0_2(json &js) {
                             if (average_z < lower_surface.second) {
                                 lower_surface = {j, average_z};
                             }
-
                         }
-                        vec<vec<int>> rev_surface = shell[lower_surface.first];
-                        // revese orientation of the inner array
-                        for (auto &innerVec: rev_surface) {
-                            reverse(innerVec.begin(), innerVec.end());
-                        }
-
-                        lod0_2_boundaries.push_back(rev_surface);
                     }
+                    vec<vec<int>> rev_surface = shell[lower_surface.first];
+                    // revese orientation of the inner array
+                    for (auto &innerVec: rev_surface) {
+                        reverse(innerVec.begin(), innerVec.end());
+                    }
+                    lod0_2_boundaries.push_back(rev_surface);
                 }
             }
+            cout << "lod0_2_boundaries size: " << lod0_2_boundaries.size() << endl;
             lod0_2_geometry["boundaries"] = lod0_2_boundaries;
             co.value()["geometry"].push_back(lod0_2_geometry);
         }
@@ -149,37 +154,62 @@ json lod0_2(json &js) {
     return js;
 }
 
-
 json extract_lod1_2(json &js) {
     const vec<double> scales = js["transform"]["scale"];
     const vec<double> translates = js["transform"]["translate"];
+    cout << "run-----------------" << endl;
     for (auto &co: js["CityObjects"].items()) {
         if (std::find(BUILDING_TYPE.begin(), BUILDING_TYPE.end(),
                       co.value()["type"]) != BUILDING_TYPE.end()) {
-            json lod1_2_geometry = {{"lod",  "0.7"},
-                                    {"type", "MultiSurface"}};
+
+            //            extract lod0.2
             for (auto &g: co.value()["geometry"]) {
                 if (g["lod"] == "2.2") {
-                    vec<vec<vec<int>>> lod1_2_boundaries;
                     for (auto &shell: g["boundaries"]) {
+                        vec<vec<vec<int>>> lod0_2_boundaries;
                         for (size_t i = 0; i < shell.size(); i++) {
+                            pair<int, double> lower_surface;
                             json surface = shell[i];
                             vec<vec<int>> surface_boundary;
                             for (size_t j = 0; j < surface.size(); j++) {
                                 vec<vec<double>> vertices;
                                 vec<Point3> points;
-                                vec<int> face_boundary;
+                                double total_z = 0;
+                                for (auto &boundary: surface[j].get<vec<int>>()) {
+                                    vec<int> vertex = js["vertices"][boundary];
+                                    vec<double> tv = transform(vertex, scales, translates);
+                                    vertices.push_back(tv);
+                                    total_z = total_z + tv[2];
+                                };
+                                double average_z = total_z / vertices.size();
+                                if (average_z < lower_surface.second) {
+                                    lower_surface = {j, average_z};
+                                }
+                            }
+                            vec<vec<int>> ground_surface = shell[lower_surface.first];
+                            lod0_2_boundaries.push_back(ground_surface);
+                        }
+
+                        json lod1_0_geometry = {{"lod",  "0.7"},
+                                                {"type", "MultiSurface"}};
+                        vec<vec<vec<int>>> lod1_0_boundaries;
+                        vec<vec<vec<int>>> roof_multi_surface;
+                        double roof_height;
+                        for (size_t i = 0; i < shell.size(); i++) {
+                            json surface = shell[i];
+
+                            vec<vec<int>> roof_surface_boundary;
+                            vec<vec<vec<int>>> wall_surfaces_boundary;
+                            for (size_t j = 0; j < surface.size(); j++) {
+                                vec<vec<double>> vertices;
+                                vec<Point3> points;
                                 for (auto &boundary: surface[j].get<vec<int>>()) {
                                     vec<int> vertex = js["vertices"][boundary];
                                     vec<double> tv = transform(vertex, scales, translates);
                                     Point3 point = Point3(tv[0], tv[1], tv[2]);
-                                    face_boundary.push_back(boundary);
-                                    points.push_back(point);
                                     vertices.push_back(tv);
+                                    points.push_back(point);
                                 };
-                                if (end(points) - begin(points) < 3) {
-                                    cout << "Warning: less than 3 points in a face!";
-                                }
                                 Point3 u = Point3(points[1][0] - points[0][0],
                                                   points[1][1] - points[0][1],
                                                   points[1][2] - points[0][2]);
@@ -189,12 +219,12 @@ json extract_lod1_2(json &js) {
                                 Point3 normal = {u[1] * v[2] - u[2] * v[1],
                                                  u[2] * v[0] - u[0] * v[2],
                                                  u[0] * v[1] - u[1] * v[0]};
+                                if (j != 0) { // inner boundary
+                                    normal = {-normal[0], -normal[1], -normal[2]};
+                                }
                                 if (normal[2] > 0) {
-                                    surface_boundary.push_back(face_boundary);
-                                    //                                    cout << "normal vector
-                                    //                                    is: " << normal[2] <<
-                                    //                                    endl;
-                                    // find highest and lowest vertex
+                                    roof_surface_boundary.push_back(surface[j]);
+
                                     double lod1_2_roof_height;
                                     if (!points.empty()) {
                                         auto minmax = std::minmax_element(
@@ -207,13 +237,94 @@ json extract_lod1_2(json &js) {
                                                 (*minmax.first)[2];
                                         cout << "roof height is: " << lod1_2_roof_height << endl;
                                     }
+                                    roof_height = lod1_2_roof_height;
                                 }
                             }
-                            lod1_2_boundaries.push_back(surface_boundary);
+                            roof_multi_surface.push_back(roof_surface_boundary);
                         }
+
+                        // print out shape of lod0_2_boundaries
+//                        for (auto &surface: lod0_2_boundaries) {
+//                            for (auto &boundary: surface) {
+//                                for (auto &vertex: boundary) {
+//                                    cout << vertex << " ";
+//                                }
+//                                cout << endl;
+//                            }
+//                        }
+
+                        vec<vec<vec<int>>> multi_ground_surface = lod0_2_boundaries;
+                        vec<vec<vec<int>>> wallsurfaces;
+                        // loop  boundaries with pair of vertices and construct wall surface which consists of 4 vertices 2 for ground surface and 2 for roof surface)
+//                                TODO: DELETE ME
+                        if (roof_multi_surface.size() != multi_ground_surface.size()) {
+                            cout << "multi ground surface size: " << multi_ground_surface.size() << endl;
+                            cout << "roof multi surface size: " << roof_multi_surface.size() << endl;
+                            cout << "warining!!!!????? different size!!! multi x multi" << endl;
+                        }
+                        for (size_t i = 0; i < multi_ground_surface.size(); i++) {
+                            vec<vec<int>> ground_surface = multi_ground_surface[i];
+                            vec<vec<int>> roof_surface = roof_multi_surface[i];
+                            vec<vec<int>> wall_surface;
+                            if (ground_surface.size() != roof_multi_surface[i].size()) {
+                                cout << "ground surface size: " << ground_surface.size() << endl;
+                                cout << "roof surface size: " << roof_surface.size() << endl;
+                                cout << "warining!!!!????? different size!!! ground surface x roof surface" << endl;
+                            }
+                            for (size_t j = 0; i < ground_surface.size(); j++) {
+                                vec<int> inner_ground_surface = ground_surface[j];
+                                vec<int> inner_roof_surface = roof_surface[j];
+                                bool is_outer = j == 0;
+                                if (inner_ground_surface.size() != inner_roof_surface.size()) {
+                                    cout << "warining!!!! different size!!! inner!!!" << endl;
+                                }
+                                vec<int> inner_wall_surface;
+                                for (size_t k = 0; k < inner_ground_surface.size(); k++) {
+                                    int ground_vertex_1 = inner_ground_surface[k];
+                                    int ground_vertex_2 = inner_ground_surface[(k - 1) %
+                                                                               inner_ground_surface.size()]; // This is because it should be CCW. In case when it's inner boundary, the orientation should be oppsoite
+                                    int roof_vertex_1 = inner_roof_surface[(k - 1) % inner_ground_surface.size()];
+                                    int roof_vertex_2 = inner_roof_surface[k];
+                                    inner_wall_surface.push_back(ground_vertex_1);
+                                    inner_wall_surface.push_back(ground_vertex_2);
+                                    inner_wall_surface.push_back(roof_vertex_2);
+                                    inner_wall_surface.push_back(roof_vertex_1);
+                                }
+                                wall_surface.push_back(inner_wall_surface);
+                            }
+                            lod1_0_boundaries.push_back(wall_surface);
+                        }
+//                        lod1_0_boundaries.push_back(wall);
                     }
-                    lod1_2_geometry["boundaries"] = lod1_2_boundaries;
-                    co.value()["geometry"].push_back(lod1_2_geometry);
+
+//                    json lod1_2_geometry = {{"lod",  "1.2"},
+//                                            {"type", "MultiSurface"}};
+//                    vec<vec<vec<vec<int>>>> lod1_2_boundaries;
+//                    vec<vec<vec<int>>> roof_multi_surface;
+//                    for (auto &surface: lod0_2_boundaries) {
+//                        vec<vec<int>> roof_surface;
+//                        for (size_t i = 0; i < surface.size(); i++) {
+//                            vec<vec<double>> vertices;
+//                            vec<Point3> points;
+//                            vec<int> roof;
+//                            for (auto &boundary: surface[i]) {
+//                                vec<int> vertex = js["vertices"][boundary];
+//                                vec<double> tv = transform(vertex, scales, translates);
+//                                Point3 point = Point3(tv[0], tv[1], tv[2]);
+//                                vertices.push_back(tv);
+//                                points.push_back(point);
+//
+//                                vec<double> roof_v = {tv[0], tv[1], tv[2] + roof_height};
+//                                vec<int> rev_vertex = rev_transform(roof_v, scales, translates);
+//                                js["vertices"].push_back(rev_vertex);
+//                                roof.push_back(js["vertices"].size() - 1);
+//                            };
+//                            roof_surface.push_back(roof);
+//                        }
+//                        roof_multi_surface.push_back(roof_surface);
+//                    }
+//                    lod1_2_geometry["boundaries"] = roof_multi_surface;
+//                    co.value()["geometry"].push_back(lod1_2_geometry);
                 }
             }
         }

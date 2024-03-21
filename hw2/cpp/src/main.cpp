@@ -60,13 +60,13 @@ int main(int argc, const char *argv[]) {
     //-- will read the file passed as argument or twobuildings.city.json if
     // nothing is passed
 
-    const char *filename =
-            (argc > 1) ? argv[1] : "../../data/tudcampus.city.json";
-    const char *outFineName =
-            (argc > 2) ? argv[2] : "../../out/out_tud.city.json";
 //    const char *filename =
-//            (argc > 1) ? argv[1] : "../../data/twobuildings.city.json";
-//    const char *outFineName = (argc > 2) ? argv[2] : "../../out/out.city.json";
+//            (argc > 1) ? argv[1] : "../../data/tudcampus.city.json";
+//    const char *outFineName =
+//            (argc > 2) ? argv[2] : "../../out/out_tud.city.json";
+    const char *filename =
+            (argc > 1) ? argv[1] : "../../data/twobuildings.city.json";
+    const char *outFineName = (argc > 2) ? argv[2] : "../../out/out.city.json";
     //    const char *filename =
     //            (argc > 1) ? argv[1] : "../../data/specialcase_2.city.json";
     //    const char *outFineName =
@@ -317,6 +317,7 @@ json extract_lod1_2(json &js) {
                                 }
                             }
                             wallsurfaces.push_back(roof_multi_surface[i]);
+                            wallsurfaces.push_back(multi_ground_surface[i]);
 //                            lod1_2_boundaries = wallsurfaces;
                             solid.push_back(wallsurfaces);
                         }

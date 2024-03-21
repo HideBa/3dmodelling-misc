@@ -60,13 +60,13 @@ int main(int argc, const char *argv[]) {
     //-- will read the file passed as argument or twobuildings.city.json if
     // nothing is passed
 
-    //    const char *filename =
-    //            (argc > 1) ? argv[1] : "../../data/tudcampus.city.json";
-    //    const char *outFineName =
-    //            (argc > 2) ? argv[2] : "../../out/out_tud.city.json";
     const char *filename =
-            (argc > 1) ? argv[1] : "../../data/twobuildings.city.json";
-    const char *outFineName = (argc > 2) ? argv[2] : "../../out/out.city.json";
+            (argc > 1) ? argv[1] : "../../data/tudcampus.city.json";
+    const char *outFineName =
+            (argc > 2) ? argv[2] : "../../out/out_tud.city.json";
+//    const char *filename =
+//            (argc > 1) ? argv[1] : "../../data/twobuildings.city.json";
+//    const char *outFineName = (argc > 2) ? argv[2] : "../../out/out.city.json";
     //    const char *filename =
     //            (argc > 1) ? argv[1] : "../../data/specialcase_2.city.json";
     //    const char *outFineName =
@@ -167,7 +167,7 @@ json extract_lod1_2(json &js) {
 
             //            extract lod0.2
             json lod1_2_geometry = {{"lod",  "1.2"},
-                                    {"type", "MultiSurface"}};
+                                    {"type", "Solid"}};
             vec<vec<vec<int>>> lod1_2_boundaries;
             for (auto &g: co.value()["geometry"]) {
                 double roof_height;
@@ -277,7 +277,7 @@ json extract_lod1_2(json &js) {
                         co.value()["geometry"].push_back(lod1_0_geometry);
 //                        ========================
 
-
+                        vec<vec<vec<vec<int>>>> solid;
                         vec<vec<vec<int>>> multi_ground_surface = lod0_2_boundaries;
                         vec<vec<vec<int>>> lod1_2_boundaries;
                         vec<vec<vec<int>>> wallsurfaces;
@@ -317,9 +317,11 @@ json extract_lod1_2(json &js) {
                                 }
                             }
                             wallsurfaces.push_back(roof_multi_surface[i]);
-                            lod1_2_boundaries = wallsurfaces;
+//                            lod1_2_boundaries = wallsurfaces;
+                            solid.push_back(wallsurfaces);
                         }
-                        lod1_2_geometry["boundaries"] = lod1_2_boundaries;
+                        lod1_2_geometry["boundaries"] = solid;
+//                        lod1_2_geometry["boundaries"] = lod1_2_boundaries;
                         co.value()["geometry"].push_back(lod1_2_geometry);
 
                     }

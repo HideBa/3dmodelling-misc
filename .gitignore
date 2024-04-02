@@ -99,3 +99,6 @@ include/
 out/
 playground/
 3dbag_data/
+input/
+IfcConvert
+*.blend

@@ -2,16 +2,16 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "(lldb) Launch",
+      "name": "hw3 (lldb) Launch",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/ass1",
+      "program": "${workspaceFolder}/build/hw3",
       "args": [],
       "stopAtEntry": false,
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/hw3",
       "environment": [],
       "externalConsole": false,
       "MIMode": "lldb"
-    }
+    },
   ]
 }

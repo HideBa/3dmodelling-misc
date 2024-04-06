@@ -1,4 +1,5 @@
 
+#include "io.cpp"
 #include "types.h"
 #include <fstream>
 #include <iostream>
@@ -23,19 +24,17 @@ int main(int argc, const char *argv[]) {
     std::cout << "Processing: " << input_output.first << std::endl;
     std::ifstream input;
     input.open(input_output.first);
-    map<string, BIMObject> bim_objects = read_obj(input);
+    auto [bim_objects, vertices] = read_obj(input);
     input.close();
 
-    for (auto const bim_object : bim_objects) {
-      std::cout << "Processing: " << bim_object.first << std::endl;
-      BIMObject bim_obj = bim_object.second;
-      vec<Triangle3> shells = bim_obj.shells;
-      cout << "size of shells: " << shells.size()
-           << "\n"; // << "size of vertices: " << vertices.size() << "\n";
-      for (auto const shell : shells) {
-        std::cout << "Processing: " << shell << std::endl;
-      }
-    }
+    cout << "Reading obj finished :" << bim_objects.size() << "faces" << endl;
+    auto voxel_grid = create_voxel(vertices);
+    cout << "Finished creating voxel" << voxel_grid.voxels.size() << endl;
+    auto marked_voxel_grid =
+        intersection_with_bim_obj(voxel_grid, bim_objects, 0.5);
+
+    bool res = write_voxel_obj("../../out/voxel.obj", marked_voxel_grid);
+
     // json outJson =
     // write_json(outJson, input_output.second);
   }

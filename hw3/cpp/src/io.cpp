@@ -73,4 +73,58 @@ pair<BIMObjects, vec<vec<double>>> read_obj(ifstream &input_stream) {
   return make_pair(bim_objects, vertices);
 }
 
+// This is for debugging purposes
+int write_voxel_obj(const string &outfile, const VoxelGrid &vg) {
+  ofstream outFile(outfile);
+  if (!outFile.is_open()) {
+    cerr << "Failed to open " << outfile << endl;
+    return 0;
+  }
+  cout << "Writing to " << outfile << endl;
+  unsigned int vertex_count = 0;
+  for (unsigned int x = 0; x < vg.voxels.size(); x++) {
+    for (unsigned int y = 0; y < vg.voxels[x].size(); y++) {
+      for (unsigned int z = 0; z < vg.voxels[x][y].size(); z++) {
+        if (vg.voxels[x][y][z] == 1) {
+          cout << "intersection found\n";
+          double min_x = vg.origin[0] + x * vg.resolution;
+          double min_y = vg.origin[1] + y * vg.resolution;
+          double min_z = vg.origin[2] + z * vg.resolution;
+          double max_x = min_x + vg.resolution;
+          double max_y = min_y + vg.resolution;
+          double max_z = min_z + vg.resolution;
+
+          outFile << "v " << min_x << " " << min_y << " " << min_z << "\n";
+          outFile << "v " << max_x << " " << min_y << " " << min_z << "\n";
+          outFile << "v " << min_x << " " << max_y << " " << min_z << "\n";
+          outFile << "v " << max_x << " " << max_y << " " << min_z << "\n";
+          outFile << "v " << min_x << " " << min_y << " " << max_z << "\n";
+          outFile << "v " << max_x << " " << min_y << " " << max_z << "\n";
+          outFile << "v " << min_x << " " << max_y << " " << max_z << "\n";
+          outFile << "v " << max_x << " " << max_y << " " << max_z << "\n";
+
+          unsigned int v1 = vertex_count + 1;
+          outFile << "f " << v1 + 0 << " " << v1 + 1 << " " << v1 + 3 << " "
+                  << v1 + 2 << "\n";
+          outFile << "f " << v1 + 4 << " " << v1 + 5 << " " << v1 + 7 << " "
+                  << v1 + 6 << "\n";
+          outFile << "f " << v1 + 0 << " " << v1 + 1 << " " << v1 + 5 << " "
+                  << v1 + 4 << "\n";
+          outFile << "f " << v1 + 2 << " " << v1 + 3 << " " << v1 + 7 << " "
+                  << v1 + 6 << "\n";
+          outFile << "f " << v1 + 1 << " " << v1 + 3 << " " << v1 + 7 << " "
+                  << v1 + 5 << "\n";
+          outFile << "f " << v1 + 0 << " " << v1 + 2 << " " << v1 + 6 << " "
+                  << v1 + 4 << "\n";
+
+          vertex_count += 8;
+        }
+      }
+    }
+  }
+  outFile.close();
+  cout << "File has been written " << outfile << endl;
+  return 1;
+}
+
 #endif

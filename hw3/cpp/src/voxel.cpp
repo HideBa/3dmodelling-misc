@@ -6,11 +6,16 @@
 #include <cassert>
 #include <limits>
 
-VoxelGrid::VoxelGrid(unsigned int max_x, unsigned int y, unsigned int z) {
-  max_x = max_x;
+VoxelGrid::VoxelGrid(unsigned int x, unsigned int y, unsigned int z,
+                     vec<double> origin, unsigned offset, double resolution) {
+  max_x = x;
   max_y = y;
   max_z = z;
-  unsigned int total_voxels = max_x * y * z;
+  origin = origin;
+  resolution = resolution;
+
+  unsigned int total_voxels =
+      (max_x * offset * 2) * (max_y * offset * 2) * (max_z * offset * 2);
   voxels.reserve(total_voxels);
   for (unsigned int i = 0; i < total_voxels; ++i)
     voxels.push_back(0);
@@ -33,12 +38,37 @@ unsigned int VoxelGrid::operator()(const unsigned int &x, const unsigned int &y,
   return voxels[x + y * max_x + z * max_x * max_y];
 }
 
+pair<unsigned int, array<unsigned int, 3>>
+world_to_voxel_index(const VoxelGrid &vg, const vec<double> &world_coord) {
+  unsigned int x_num = (world_coord[0] - vg.origin[0]) / vg.resolution;
+  unsigned int y_num = (world_coord[1] - vg.origin[1]) / vg.resolution;
+  unsigned int z_num = (world_coord[2] - vg.origin[2]) / vg.resolution;
+
+  int voxel_index =
+      (x_num + vg.offset) * (y_num + vg.offset) * (z_num + vg.offset);
+  return make_pair(voxel_index, array<unsigned int, 3>{{x_num, y_num, z_num}});
+}
+
+vec<double> world_to_voxel_center_coord(const VoxelGrid &vg,
+                                        const vec<double> &world_coord) {
+  array<unsigned int, 3> voxel_index =
+      world_to_voxel_index(vg, world_coord).second;
+  double x_coord =
+      vg.origin[0] + voxel_index[0] * vg.resolution + vg.resolution / 2;
+  double y_coord =
+      vg.origin[1] + voxel_index[1] * vg.resolution + vg.resolution / 2;
+  double z_coord =
+      vg.origin[2] + voxel_index[2] * vg.resolution + vg.resolution / 2;
+  return {x_coord, y_coord, z_coord};
+}
+
 // VoxelGrid voxelise(unsigned int rows_x, unsigned int rows_y,
 //                    unsigned int rows_z, double resolution) {
 //   return VoxelGrid(rows_x + 2, rows_y + 2, rows_z + 2);
 // }
 
-VoxelGrid create_vexel(vec<vec<double>> vertices, double resolution) {
+VoxelGrid create_vexel(vec<vec<double>> vertices, unsigned int offset,
+                       double resolution) {
   double minx, miny, minz = numeric_limits<double>::lowest();
   double maxx, maxy, maxz = numeric_limits<double>::max();
   for (const auto &vertex : vertices) {
@@ -64,8 +94,8 @@ VoxelGrid create_vexel(vec<vec<double>> vertices, double resolution) {
   int num_x = static_cast<int>(ceil((maxx - minx) / resolution));
   int num_y = static_cast<int>(ceil((maxy - miny) / resolution));
   int num_z = static_cast<int>(ceil((maxz - minz) / resolution));
-
-  return VoxelGrid(num_x, num_y, num_z);
+  vec<double> origin = {minx, miny, minz};
+  return VoxelGrid(num_x, num_y, num_z, origin, offset, resolution);
 }
 
 int world_coord_to_voxel(const vec<double> &vertex, const vec<double> &origin,
@@ -82,12 +112,20 @@ int world_coord_to_voxel(const vec<double> &vertex, const vec<double> &origin,
 vec<double> voxel_to_world_coord(const vec<double> &vertex,
                                  const vec<double> &origin, double resolution) {
 }
+vec<double> get_voxel_center(const unsigned int &x, const unsigned int &y,
+                             const unsigned int &z, double resolution) {
+  double center_x = x * resolution + resolution / 2;
+  double center_y = y * resolution + resolution / 2;
+  double center_z = z * resolution + resolution / 2;
+  return vec<double>{center_x, center_y, center_z};
+}
 
 VoxelGrid intersection_with_bim_obj(const VoxelGrid &vg_arg,
                                     const BIMObjects &bim_objs_arg,
                                     double resolution) {
   const double half_res = resolution / 2;
-  VoxelGrid vg = VoxelGrid(vg_arg.max_x, vg_arg.max_y, vg_arg.max_z);
+  VoxelGrid vg(vg_arg.max_x, vg_arg.max_y, vg_arg.max_z, vg_arg.origin,
+               vg_arg.offset, vg_arg.resolution);
   for (auto &voxel : vg.voxels) {
     vec<double> voxel_center =
         voxel_to_world_coord(vec<double>{0, 0, 0}, vec<double>{0, 0, 0},

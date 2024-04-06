@@ -50,8 +50,14 @@ pair<BIMObjects, vec<vec<double>>> read_obj(std::ifstream &input);
 struct VoxelGrid {
   vec<unsigned int> voxels;
   unsigned int max_x, max_y, max_z;
+  // Offset is the number of additional voxels to all axis. Specifying 1 allows
+  // you to have 2 addditional voxel on each minimum and maximum side of axis.
+  unsigned int offset;
+  vec<double> origin;
+  double resolution;
 
-  VoxelGrid(unsigned int x, unsigned int y, unsigned int z);
+  VoxelGrid(unsigned int x, unsigned int y, unsigned int z, vec<double> origin,
+            unsigned offset = 1, double resolution = 0.5);
 
   unsigned int &operator()(const unsigned int &x, const unsigned int &y,
                            const unsigned int &z);
@@ -63,7 +69,8 @@ struct VoxelGrid {
 // VoxelGrid voxelise(unsigned int rows_x, unsigned int rows_y,
 //                    unsigned int rows_z, double resolution = 0.5); // meter
 
-VoxelGrid create_vexel(vec<vec<double>> vertices, double resolution = 0.5);
+VoxelGrid create_vexel(vec<vec<double>> vertices, unsigned int offset = 1,
+                       double resolution = 0.5);
 
 VoxelGrid intersection_with_bim_obj(const VoxelGrid &vg,
                                     const BIMObjects &bim_objs,

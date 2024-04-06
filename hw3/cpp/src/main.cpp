@@ -40,6 +40,9 @@ int main(int argc, const char *argv[]) {
     unsigned int class1 = 0;
     unsigned int class2 = 0;
     unsigned int class3 = 0;
+    unsigned int class4 = 0;
+    unsigned int class5 = 0;
+    unsigned int class6 = 0;
     unsigned int class0 = 0;
     for (auto x : marked_voxel_grid.voxels) {
       for (auto y : x) {
@@ -52,6 +55,12 @@ int main(int argc, const char *argv[]) {
             class3++;
           } else if (z == 0) {
             class0++;
+          } else if (z == 4) {
+            class4++;
+          } else if (z == 5) {
+            class5++;
+          } else if (z == 6) {
+            class6++;
           }
         }
       }
@@ -61,6 +70,9 @@ int main(int argc, const char *argv[]) {
     cout << "class 2: " << class2 << endl;
     cout << "class 3: " << class3 << endl;
     cout << "class 0: " << class0 << endl;
+    cout << "class 4: " << class4 << endl;
+    cout << "class 5: " << class5 << endl;
+    cout << "class 6: " << class6 << endl;
     vec<unsigned int> export_classes = {3};
     std::string export_classes_str;
     for (const auto &cls : export_classes) {

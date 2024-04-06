@@ -152,6 +152,9 @@ VoxelGrid intersection_with_bim_obj(const VoxelGrid &vg_arg,
   return vg;
 }
 
+const vec<vec<int>> six_connectivity = {{-1, 0, 0}, {1, 0, 0},  {0, -1, 0},
+                                        {0, 1, 0},  {0, 0, -1}, {0, 0, 1}};
+
 const vec<vec<int>> eighteen_connectivity = {
     // 6-connectivity
     {-1, 0, 0},
@@ -173,7 +176,7 @@ const vec<vec<int>> eighteen_connectivity = {
     {0, 1, -1},
     {0, -1, 1},
     {0, 1, 1}};
-const vec<vec<int>> twelve_six_connectivity = {
+const vec<vec<int>> twenty_six_connectivity = {
     // 6-connectivity
     {-1, 0, 0},
     {1, 0, 0},
@@ -204,6 +207,27 @@ const vec<vec<int>> twelve_six_connectivity = {
     {-1, 1, 1},
     {1, 1, 1}};
 
+void mark_interior(VoxelGrid &vg_marked, int x, int y, int z,
+                   unsigned int interior_id, const vec<vec<int>> &connectivity,
+                   const vec<unsigned int> &voxel_shape) {
+  if (x < 0 || y < 0 || z < 0 || x >= voxel_shape[0] || y >= voxel_shape[1] ||
+      z >= voxel_shape[2])
+    return;
+
+  // Only mark if voxel is currently unmarked (interior and not visited)
+  if (vg_marked.voxels[x][y][z] == 0) {
+    vg_marked.voxels[x][y][z] = interior_id;
+
+    for (const auto &adjacent_voxel : eighteen_connectivity) {
+      int adj_x = x + adjacent_voxel[0];
+      int adj_y = y + adjacent_voxel[1];
+      int adj_z = z + adjacent_voxel[2];
+      mark_interior(vg_marked, adj_x, adj_y, adj_z, interior_id, connectivity,
+                    voxel_shape);
+    }
+  }
+}
+
 VoxelGrid mark_exterior_interior(const VoxelGrid &vg) {
   cout << "===Marking exterior and interior voxels===\n";
   VoxelGrid vg_marked(vg.max_x, vg.max_y, vg.max_z, vg.origin, vg.offset,
@@ -216,9 +240,6 @@ VoxelGrid mark_exterior_interior(const VoxelGrid &vg) {
       for (unsigned int z = 0; z < vg.voxels[x][y].size(); z++) {
         // TODO: consider conectivity
         // list up adjacent voxels
-        // 6-connectivity
-        vec<vec<int>> six_connectivity = {{-1, 0, 0}, {1, 0, 0},  {0, -1, 0},
-                                          {0, 1, 0},  {0, 0, -1}, {0, 0, 1}};
         if (x == 0 && y == 0 && z == 0) { // Start marking from the first voxel
           vg_marked.voxels[x][y][z] = 2;  // exterior
         }
@@ -251,17 +272,21 @@ VoxelGrid mark_exterior_interior(const VoxelGrid &vg) {
     }
   }
 
+  unsigned int interior_id =
+      3; // 0: empty, 1: intersected, 2: exterior, 3 or lager: interior
   for (unsigned int x = 0; x < vg.voxels.size(); x++) {
     for (unsigned int y = 0; y < vg.voxels[x].size(); y++) {
       for (unsigned int z = 0; z < vg.voxels[x][y].size(); z++) {
         // If the voxel is not marked as exterior, mark as interior
         if (vg_marked.voxels[x][y][z] == 0) {
-          vg_marked.voxels[x][y][z] = 3; // interior
+          mark_interior(vg_marked, x, y, z, interior_id, eighteen_connectivity,
+                        voxel_shape);
+          interior_id++;
         }
       }
     }
   }
-
+  cout << "num of classes: " << interior_id << "\n";
   return vg_marked;
 }
 

@@ -49,7 +49,7 @@ pair<BIMObjects, vec<vec<double>>> read_obj(std::ifstream &input);
 // Voxel Object
 struct VoxelGrid {
   vec<vec<vec<unsigned int>>>
-      voxels; // 0: empty, 1: intersected, 2: exterior, 3: interior
+      voxels; // 0: empty, 1: intersected, 2: exterior, 3 or lager: interior
   unsigned int max_x, max_y, max_z;
   // Offset is the number of additional voxels to all axis. Specifying 1 allows
   // you to have 2 addditional voxel on each minimum and maximum side of axis.

@@ -19,7 +19,6 @@ VoxelGrid::VoxelGrid(unsigned int x, unsigned int y, unsigned int z,
                          origin[1] - offset * resolution,
                          origin[2] - offset * resolution};
 
-  cout << "Creating voxel grid" << endl;
   unsigned int total_voxels =
       (max_x + offset * 2) * (max_y + offset * 2) * (max_z + offset * 2);
   voxels.reserve(total_voxels);
@@ -34,11 +33,6 @@ VoxelGrid::VoxelGrid(unsigned int x, unsigned int y, unsigned int z,
     }
     voxels.push_back(y_voxels);
   }
-  cout << "Finished creating voxel grid" << endl;
-  cout << "origin: " << origin[0] << " " << origin[1] << " " << origin[2]
-       << endl;
-  cout << "offset origin: " << offset_origin[0] << " " << offset_origin[1]
-       << " " << offset_origin[2] << endl;
 }
 
 unsigned int &VoxelGrid::operator()(const unsigned int &x,
@@ -154,8 +148,6 @@ VoxelGrid intersection_with_bim_obj(const VoxelGrid &vg_arg,
       }
     }
   }
-  cout << "size of voxel grid 2: " << vg.voxels.size() << " "
-       << vg.voxels[0].size() << " " << vg.voxels[0][0].size() << endl;
 
   return vg;
 }
@@ -236,7 +228,7 @@ VoxelGrid mark_exterior_interior(const VoxelGrid &vg) {
         }
         // If the voxel is exterior, mark all adjacent voxels as exterior
         if (vg_marked.voxels[x][y][z] == 2) {
-          for (auto const &adjacent_voxel : six_connectivity) {
+          for (auto const &adjacent_voxel : eighteen_connectivity) {
             int adj_x = x + adjacent_voxel[0];
             int adj_y = y + adjacent_voxel[1];
             int adj_z = z + adjacent_voxel[2];
@@ -249,7 +241,8 @@ VoxelGrid mark_exterior_interior(const VoxelGrid &vg) {
             }
             // Only when it's empty, mark as exterior so that it doesn't
             // overwrite marked voxels;
-            if (vg.voxels[adj_x][adj_y][adj_z] == 0) {
+            if ((vg.voxels[adj_x][adj_y][adj_z] == 0) &&
+                (vg_marked.voxels[adj_x][adj_y][adj_z] == 0)) {
               vg_marked.voxels[adj_x][adj_y][adj_z] = 2; // exterior
             }
           }
@@ -268,9 +261,6 @@ VoxelGrid mark_exterior_interior(const VoxelGrid &vg) {
       }
     }
   }
-  cout << "size of voxel grid 3: " << vg_marked.voxels.size() << " "
-       << vg_marked.voxels[0].size() << " " << vg_marked.voxels[0][0].size()
-       << endl;
 
   return vg_marked;
 }

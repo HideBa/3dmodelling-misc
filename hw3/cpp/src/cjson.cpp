@@ -31,8 +31,28 @@ vec<int> rev_transform(vec<double> vertices, vec<double> scales,
   return transformed_vertices;
 };
 
-vec<string> BUILDING_TYPE = {"Building", "BuildingPart", "BuildingRoom",
-                             "BuildingStorey", "BuildingUnit"};
+string city_object_type_to_string(CityObjectType type) {
+  switch (type) {
+  case CityObjectType::Building:
+    return "Building";
+  case CityObjectType::BuildingPart:
+    return "BuildingPart";
+  case CityObjectType::BuildingRoom:
+    return "BuildingRoom";
+  case CityObjectType::BuildingStorey:
+    return "BuildingStorey";
+  case CityObjectType::BuildingUnit:
+    return "BuildingUnit";
+  case CityObjectType::BuildingInstallation:
+    return "BuildingInstallation";
+  case CityObjectType::BuildingConstructiveElement:
+    return "BuildingConstructiveElement";
+  case CityObjectType::BuildingFurniture:
+    return "BuildingFurniture";
+  default:
+    return "UNKOWN";
+  }
+}
 
 vec<string> SEMANTICS = {
     "RoofSurface",         "GroundSurface",     "WallSurface", "ClosureSurface",
@@ -54,12 +74,22 @@ json export_voxel_to_cityjson(VoxelGrid &vg) {
   j["metadata"]["identifier"] = "hw3";
   j["extensions"] = json::object();
 
+  // add parent building
+  json parent_building;
+  parent_building["type"] =
+      city_object_type_to_string(CityObjectType::Building);
+  parent_building["geometry"] = json::array();
+  parent_building["children"] = json::array();
+  const string parent_building_key = "obj_parent_building";
+
   vec<vec<int>> vertices;
   const string object_name_prefix = "obj";
   for (unsigned int x = 0; x < vg.voxels.size(); ++x) {
     for (unsigned int y = 0; y < vg.voxels[x].size(); ++y) {
       for (unsigned int z = 0; z < vg.voxels[x][y].size(); ++z) {
-        VoxelLabel voxel_label = vg.voxels[x][y][z].label;
+        auto voxel_label = vg.voxels[x][y][z].label;
+        auto city_object_type = vg.voxels[x][y][z].city_object_type;
+        auto room_id = vg.voxels[x][y][z].room_id;
         if (voxel_label ==
             VoxelLabel::INTERSECTED) { // TODO: check what happen when accessing
                                        // like vg(x, y, z)
@@ -116,37 +146,44 @@ json export_voxel_to_cityjson(VoxelGrid &vg) {
           solid_boundary.push_back(
               outer_shell_boundary); // inner shell doesn't exist as it's voxel
 
-          // check if there is already a city object whose key looks like
-          // "obj{voxel_label}". If exist, add the voxel boundary to the
-          // existing city object. If not exist, create a new city object.
-          string city_object_key =
-              object_name_prefix + voxel_lable_to_string(voxel_label);
-          if (j["CityObjects"].find(city_object_key) !=
-              j["CityObjects"].end()) {
-            j["CityObjects"][city_object_key]["geometry"][0]["boundaries"]
-                .push_back(solid_boundary);
-            // TODO: //add semantics as well
-          } else {
-            json city_object;
-            city_object["type"] = BUILDING_TYPE[0]; // TODO: check later
-            json lod3_geometry = json::object();
-            lod3_geometry["type"] = "CompositeSolid";
-            lod3_geometry["lod"] = "3";
-            lod3_geometry["boundaries"] = json::array();
-            lod3_geometry["boundaries"].push_back(solid_boundary);
-            city_object["geometry"].push_back(lod3_geometry);
-            // city_object["geometry"]["semantics"] = json::object();
-            // city_object["geometry"]["semantics"]["values"] = json::array();
-            // city_object["geometry"]["semantics"]["surfaces"] = json::array();
-            // city_object["geometry"]["semantics"]["surfaces"].push_back(
-            //     SEMANTICS[voxel_label - 1]);
-            // city_object["geometry"]["semantics"]["values"].push_back(1);
-            j["CityObjects"][city_object_key] = city_object;
+          if (voxel_label == VoxelLabel::INTERSECTED) {
+            // check if there is already a city object whose key looks like
+            // "obj{voxel_label}". If exist, add the voxel boundary to the
+            // existing city object. If not exist, create a new city object.
+            string city_object_key = object_name_prefix + to_string(room_id);
+            if (j["CityObjects"].find(city_object_key) !=
+                j["CityObjects"].end()) {
+              j["CityObjects"][city_object_key]["geometry"][0]["boundaries"]
+                  .push_back(solid_boundary);
+              // TODO: //add semantics as well
+            } else {
+              json city_object;
+              city_object["type"] = city_object_type_to_string(
+                  city_object_type); // TODO: check later
+              json lod3_geometry = json::object();
+              lod3_geometry["type"] = "CompositeSolid";
+              lod3_geometry["lod"] = "3";
+              lod3_geometry["boundaries"] = json::array();
+              lod3_geometry["boundaries"].push_back(solid_boundary);
+              city_object["geometry"].push_back(lod3_geometry);
+              city_object["parents"] = json::array({parent_building_key});
+              parent_building["children"].push_back(city_object_key);
+              // city_object["geometry"]["semantics"] = json::object();
+              // city_object["geometry"]["semantics"]["values"] = json::array();
+              // city_object["geometry"]["semantics"]["surfaces"] =
+              // json::array();
+              // city_object["geometry"]["semantics"]["surfaces"].push_back(
+              //     SEMANTICS[voxel_label - 1]);
+              // city_object["geometry"]["semantics"]["values"].push_back(1);
+              j["CityObjects"][city_object_key] = city_object;
+            }
           }
         }
       }
     }
   }
+  j["CityObjects"][parent_building_key] = parent_building;
+
   j["vertices"] = vertices;
 
   return j;

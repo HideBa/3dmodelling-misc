@@ -75,7 +75,7 @@ pair<BIMObjects, vec<vec<double>>> read_obj(ifstream &input_stream) {
 
 // This is for debugging purposes
 int write_voxel_obj(const string &outfile, const VoxelGrid &vg,
-                    vec<unsigned int> export_markers = {1}) {
+                    vec<VoxelLabel> export_labels = {VoxelLabel::INTERSECTED}) {
   ofstream outFile(outfile);
   if (!outFile.is_open()) {
     cerr << "Failed to open " << outfile << endl;
@@ -86,8 +86,8 @@ int write_voxel_obj(const string &outfile, const VoxelGrid &vg,
   for (unsigned int x = 0; x < vg.voxels.size(); x++) {
     for (unsigned int y = 0; y < vg.voxels[x].size(); y++) {
       for (unsigned int z = 0; z < vg.voxels[x][y].size(); z++) {
-        if (find(export_markers.begin(), export_markers.end(),
-                 vg.voxels[x][y][z].room_id) != export_markers.end()) {
+        if (find(export_labels.begin(), export_labels.end(),
+                 vg.voxels[x][y][z].label) != export_labels.end()) {
           double min_x = vg.offset_origin[0] + x * vg.resolution;
           double min_y = vg.offset_origin[1] + y * vg.resolution;
           double min_z = vg.offset_origin[2] + z * vg.resolution;

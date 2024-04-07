@@ -288,7 +288,8 @@ VoxelGrid mark_exterior_interior(const VoxelGrid &vg) {
   return vg_marked;
 }
 
-void extract_surface(const VoxelGrid &vg, vec<vec<int>> connectivity) {
+void extract_surface(VoxelGrid &vg,
+                     vec<vec<int>> connectivity = eighteen_connectivity) {
   for (unsigned int x = 0; x < vg.voxels.size(); x++) {
     for (unsigned int y = 0; y < vg.voxels[x].size(); y++) {
       for (unsigned int z = 0; z < vg.voxels[x][y].size(); z++) {
@@ -301,9 +302,14 @@ void extract_surface(const VoxelGrid &vg, vec<vec<int>> connectivity) {
               adj_x < 0 || adj_y < 0 || adj_z < 0) {
             continue;
           }
-          if (vg.voxels[adj_x][adj_y][adj_z].label !=
-              vg.voxels[x][y][z].label) {
-            is_boundary = true;
+          if ((vg.voxels[x][y][z].label == VoxelLabel::INTERSECTED) &&
+              (vg.voxels[adj_x][adj_y][adj_z].label == VoxelLabel::EXTERIOR)) {
+            vg.voxels[x][y][z].city_object_type = CityObjectType::BuildingPart;
+            break;
+          } else if ((vg.voxels[x][y][z].label == VoxelLabel::INTERSECTED) &&
+                     (vg.voxels[adj_x][adj_y][adj_z].label ==
+                      VoxelLabel::INTERIOR)) {
+            vg.voxels[x][y][z].city_object_type = CityObjectType::BuildingRoom;
             break;
           }
         }

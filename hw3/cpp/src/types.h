@@ -68,6 +68,8 @@ enum class CityObjectType {
   BuildingFurniture
 };
 
+string city_object_type_to_string(CityObjectType type);
+
 // Maybe we use a couple of these
 enum class Semantics {
   UNKOWN,

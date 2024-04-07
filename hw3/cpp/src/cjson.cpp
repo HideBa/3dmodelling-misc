@@ -55,14 +55,18 @@ json export_voxel_to_cityjson(VoxelGrid &vg) {
   j["extensions"] = json::object();
 
   vec<vec<int>> vertices;
-  const string objct_name_prefix = "obj";
+  const string object_name_prefix = "obj";
   for (unsigned int x = 0; x < vg.voxels.size(); ++x) {
     for (unsigned int y = 0; y < vg.voxels[x].size(); ++y) {
       for (unsigned int z = 0; z < vg.voxels[x][y].size(); ++z) {
-        int voxel_label = vg.voxels[x][y][z];
-        if ((voxel_label != 0) &&
-            (voxel_label !=
-             2)) { // TODO: check what happen when accessing like vg(x, y, z)
+        VoxelLabel voxel_label = vg.voxels[x][y][z].label;
+        if (voxel_label ==
+            VoxelLabel::INTERSECTED) { // TODO: check what happen when accessing
+                                       // like vg(x, y, z)
+                                       //             if ((voxel_label != 0) &&
+                                       //            (voxel_label !=
+          //             2)) { // TODO: check what happen when accessing like
+          //             vg(x, y, z)
           double min_x = vg.offset_origin[0] + x * vg.resolution;
           double min_y = vg.offset_origin[1] + y * vg.resolution;
           double min_z = vg.offset_origin[2] + z * vg.resolution;
@@ -115,7 +119,8 @@ json export_voxel_to_cityjson(VoxelGrid &vg) {
           // check if there is already a city object whose key looks like
           // "obj{voxel_label}". If exist, add the voxel boundary to the
           // existing city object. If not exist, create a new city object.
-          string city_object_key = objct_name_prefix + to_string(voxel_label);
+          string city_object_key =
+              object_name_prefix + voxel_lable_to_string(voxel_label);
           if (j["CityObjects"].find(city_object_key) !=
               j["CityObjects"].end()) {
             j["CityObjects"][city_object_key]["geometry"][0]["boundaries"]

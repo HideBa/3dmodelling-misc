@@ -87,7 +87,7 @@ int write_voxel_obj(const string &outfile, const VoxelGrid &vg,
     for (unsigned int y = 0; y < vg.voxels[x].size(); y++) {
       for (unsigned int z = 0; z < vg.voxels[x][y].size(); z++) {
         if (find(export_markers.begin(), export_markers.end(),
-                 vg.voxels[x][y][z]) != export_markers.end()) {
+                 vg.voxels[x][y][z].room_id) != export_markers.end()) {
           double min_x = vg.offset_origin[0] + x * vg.resolution;
           double min_y = vg.offset_origin[1] + y * vg.resolution;
           double min_z = vg.offset_origin[2] + z * vg.resolution;

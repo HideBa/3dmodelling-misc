@@ -2,6 +2,7 @@
 #define VOXEL_H
 
 #include "types.h"
+#include "voxelinfo.cpp"
 #include <array>
 #include <cassert>
 #include <cstddef>
@@ -23,11 +24,12 @@ VoxelGrid::VoxelGrid(unsigned int x, unsigned int y, unsigned int z,
       (max_x + offset * 2) * (max_y + offset * 2) * (max_z + offset * 2);
   voxels.reserve(total_voxels);
   for (unsigned int i = 0; i < max_x + offset * 2; ++i) {
-    vec<vec<unsigned int>> y_voxels;
+    vec<vec<VoxelInfo>> y_voxels;
     for (unsigned int j = 0; j < max_y + offset * 2; ++j) {
-      vec<unsigned int> z_voxels;
+      vec<VoxelInfo> z_voxels;
       for (unsigned int k = 0; k < max_z + offset * 2; ++k) {
-        z_voxels.push_back(0);
+        VoxelInfo voxel_info = VoxelInfo();
+        z_voxels.push_back(voxel_info);
       }
       y_voxels.push_back(z_voxels);
     }
@@ -35,17 +37,16 @@ VoxelGrid::VoxelGrid(unsigned int x, unsigned int y, unsigned int z,
   }
 }
 
-unsigned int &VoxelGrid::operator()(const unsigned int &x,
-                                    const unsigned int &y,
-                                    const unsigned int &z) {
+VoxelInfo &VoxelGrid::operator()(const unsigned int &x, const unsigned int &y,
+                                 const unsigned int &z) {
   assert(x >= 0 && x < max_x);
   assert(y >= 0 && y < max_y);
   assert(z >= 0 && z < max_z);
   return voxels[x][y][z];
 }
 
-unsigned int VoxelGrid::operator()(const unsigned int &x, const unsigned int &y,
-                                   const unsigned int &z) const {
+VoxelInfo VoxelGrid::operator()(const unsigned int &x, const unsigned int &y,
+                                const unsigned int &z) const {
   assert(x >= 0 && x < max_x);
   assert(y >= 0 && y < max_y);
   assert(z >= 0 && z < max_z);
@@ -122,7 +123,9 @@ VoxelGrid intersection_with_bim_obj(const VoxelGrid &vg_arg,
                 cgal_bbox,
                 shell); // TODO: do heuristic approach to reduce computation
             if (is_intersect) {
-              vg.voxels[x][y][z] = 1; // TODO: consider to make this into group
+              vg.voxels[x][y][z].label =
+                  VoxelLabel::INTERSECTED; // TODO: consider to make this into
+              // group
               break;
             }
           }
@@ -196,17 +199,23 @@ void mark_interior(VoxelGrid &vg_marked, int x, int y, int z,
                    unsigned int interior_id, const vec<vec<int>> &connectivity,
                    const vec<unsigned int> &voxel_shape) {
   if (x < 0 || y < 0 || z < 0 || x >= voxel_shape[0] || y >= voxel_shape[1] ||
-      z >= voxel_shape[2])
+      z >= voxel_shape[2]) {
     return;
+  }
 
   // Only mark if voxel is currently unmarked (interior and not visited)
-  if (vg_marked.voxels[x][y][z] == 0) {
-    vg_marked.voxels[x][y][z] = interior_id;
+  if (vg_marked.voxels[x][y][z].label == VoxelLabel::UNLABELED) {
+    vg_marked.voxels[x][y][z].label = VoxelLabel::INTERIOR;
+    vg_marked.voxels[x][y][z].room_id = interior_id;
 
-    for (const auto &adjacent_voxel : eighteen_connectivity) {
+    for (const auto &adjacent_voxel : connectivity) {
       int adj_x = x + adjacent_voxel[0];
       int adj_y = y + adjacent_voxel[1];
       int adj_z = z + adjacent_voxel[2];
+      if (adj_x >= voxel_shape[0] || adj_y >= voxel_shape[1] ||
+          adj_z >= voxel_shape[2] || adj_x < 0 || adj_y < 0 || adj_z < 0) {
+        continue;
+      }
       mark_interior(vg_marked, adj_x, adj_y, adj_z, interior_id, connectivity,
                     voxel_shape);
     }
@@ -226,14 +235,15 @@ VoxelGrid mark_exterior_interior(const VoxelGrid &vg) {
         // TODO: consider conectivity
         // list up adjacent voxels
         if (x == 0 && y == 0 && z == 0) { // Start marking from the first voxel
-          vg_marked.voxels[x][y][z] = 2;  // exterior
+          vg_marked.voxels[x][y][z].label = VoxelLabel::EXTERIOR; // exterior
         }
 
-        if (vg.voxels[x][y][z] == 1) {
-          vg_marked.voxels[x][y][z] = 1; // intersected
+        if (vg.voxels[x][y][z].label == VoxelLabel::INTERSECTED) {
+          vg_marked.voxels[x][y][z].label =
+              VoxelLabel::INTERSECTED; // intersected
         }
         // If the voxel is exterior, mark all adjacent voxels as exterior
-        if (vg_marked.voxels[x][y][z] == 2) {
+        if (vg_marked.voxels[x][y][z].label == VoxelLabel::EXTERIOR) {
           for (auto const &adjacent_voxel : eighteen_connectivity) {
             int adj_x = x + adjacent_voxel[0];
             int adj_y = y + adjacent_voxel[1];
@@ -247,9 +257,12 @@ VoxelGrid mark_exterior_interior(const VoxelGrid &vg) {
             }
             // Only when it's empty, mark as exterior so that it doesn't
             // overwrite marked voxels;
-            if ((vg.voxels[adj_x][adj_y][adj_z] == 0) &&
-                (vg_marked.voxels[adj_x][adj_y][adj_z] == 0)) {
-              vg_marked.voxels[adj_x][adj_y][adj_z] = 2; // exterior
+            if ((vg.voxels[adj_x][adj_y][adj_z].label ==
+                 VoxelLabel::UNLABELED) &&
+                (vg_marked.voxels[adj_x][adj_y][adj_z].label ==
+                 VoxelLabel::UNLABELED)) {
+              vg_marked.voxels[adj_x][adj_y][adj_z].label =
+                  VoxelLabel::EXTERIOR; // exterior
             }
           }
         }
@@ -258,12 +271,12 @@ VoxelGrid mark_exterior_interior(const VoxelGrid &vg) {
   }
 
   unsigned int interior_id =
-      3; // 0: empty, 1: intersected, 2: exterior, 3 or lager: interior
+      0; // 0: empty, 1: intersected, 2: exterior, 3 or lager: interior
   for (unsigned int x = 0; x < vg.voxels.size(); x++) {
     for (unsigned int y = 0; y < vg.voxels[x].size(); y++) {
       for (unsigned int z = 0; z < vg.voxels[x][y].size(); z++) {
         // If the voxel is not marked as exterior, mark as interior
-        if (vg_marked.voxels[x][y][z] == 0) {
+        if (vg_marked.voxels[x][y][z].label == VoxelLabel::UNLABELED) {
           mark_interior(vg_marked, x, y, z, interior_id, eighteen_connectivity,
                         voxel_shape);
           interior_id++;
@@ -288,7 +301,8 @@ void extract_surface(const VoxelGrid &vg, vec<vec<int>> connectivity) {
               adj_x < 0 || adj_y < 0 || adj_z < 0) {
             continue;
           }
-          if (vg.voxels[adj_x][adj_y][adj_z] != vg.voxels[x][y][z]) {
+          if (vg.voxels[adj_x][adj_y][adj_z].label !=
+              vg.voxels[x][y][z].label) {
             is_boundary = true;
             break;
           }

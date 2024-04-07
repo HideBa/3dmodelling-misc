@@ -31,4 +31,12 @@ vec<int> rev_transform(vec<double> vertices, vec<double> scales,
   return transformed_vertices;
 };
 
+vec<string> BUILDING_TYPE = {"Building", "BuildingPart", "BuildingRoom",
+                             "BuildingStorey", "BuildingUnit"};
+
+vec<string> SEMANTICS = {
+    "RoofSurface",         "GroundSurface",     "WallSurface", "ClosureSurface",
+    "OuterCeilingSurface", "OuterFloorSurface", "Window",      "Door",
+    "InteriorWallSurface", "CeilingSurface",    "FloorSurface"};
+
 #endif

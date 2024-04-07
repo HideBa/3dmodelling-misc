@@ -11,10 +11,6 @@
 
 using namespace std;
 
-std::vector<std::string> BUILDING_TYPE = {"Building", "BuildingPart",
-                                          "BuildingRoom", "BuildingStorey",
-                                          "BuildingUnit"};
-
 int main(int argc, const char *argv[]) {
   vec<pair<string, string>> input_outputs = {
 
@@ -32,7 +28,7 @@ int main(int argc, const char *argv[]) {
     auto voxel_grid = create_voxel(vertices, 2, 0.5);
     cout << "Finished creating voxel" << voxel_grid.voxels.size() << endl;
     auto intersected_voxel_grid =
-        intersection_with_bim_obj(voxel_grid, bim_objects, 0.5);
+        intersection_with_bim_obj(voxel_grid, bim_objects);
 
     auto marked_voxel_grid = mark_exterior_interior(intersected_voxel_grid);
 

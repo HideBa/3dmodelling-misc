@@ -56,15 +56,6 @@ vec<unsigned int> VoxelGrid::voxel_shape_with_offset() const {
   return {max_x + offset * 2, max_y + offset * 2, max_z + offset * 2};
 };
 
-// vec<unsigned int> world_to_voxel_index(const VoxelGrid &vg,
-//                                        const vec<double> &world_coord) {
-//   unsigned int x_num = (world_coord[0] - vg.origin[0]) / vg.resolution;
-//   unsigned int y_num = (world_coord[1] - vg.origin[1]) / vg.resolution;
-//   unsigned int z_num = (world_coord[2] - vg.origin[2]) / vg.resolution;
-
-//   return vec<unsigned int>{x_num, y_num, z_num};
-// }
-
 vec<double> voxel_index_to_coordinate(const VoxelGrid &vg,
                                       const vec<unsigned int> &voxel_xyz) {
   double x_coord =
@@ -76,12 +67,6 @@ vec<double> voxel_index_to_coordinate(const VoxelGrid &vg,
   return {x_coord, y_coord, z_coord};
   ;
 }
-// vec<double> world_to_voxel_center_coord(const VoxelGrid &vg,
-//                                         const vec<double> &world_coord) {
-//   vec<unsigned int> voxel_index = world_to_voxel_index(vg, world_coord);
-
-//   return voxel_index_to_coordinate(vg, voxel_index);
-// }
 
 VoxelGrid create_voxel(vec<vec<double>> vertices, unsigned int offset,
                        double resolution) {
@@ -112,8 +97,8 @@ VoxelGrid create_voxel(vec<vec<double>> vertices, unsigned int offset,
 }
 
 VoxelGrid intersection_with_bim_obj(const VoxelGrid &vg_arg,
-                                    const BIMObjects &bim_objs_arg,
-                                    double resolution = 0.5) {
+                                    const BIMObjects &bim_objs_arg) {
+  const double resolution = vg_arg.resolution;
   const double half_res = resolution / 2;
   VoxelGrid vg(vg_arg.max_x, vg_arg.max_y, vg_arg.max_z, vg_arg.origin,
                vg_arg.offset, vg_arg.resolution);
@@ -288,6 +273,29 @@ VoxelGrid mark_exterior_interior(const VoxelGrid &vg) {
   }
   cout << "num of classes: " << interior_id << "\n";
   return vg_marked;
+}
+
+void extract_surface(const VoxelGrid &vg, vec<vec<int>> connectivity) {
+  for (unsigned int x = 0; x < vg.voxels.size(); x++) {
+    for (unsigned int y = 0; y < vg.voxels[x].size(); y++) {
+      for (unsigned int z = 0; z < vg.voxels[x][y].size(); z++) {
+        bool is_boundary = false;
+        for (const auto &adjacent_voxel : connectivity) {
+          int adj_x = x + adjacent_voxel[0];
+          int adj_y = y + adjacent_voxel[1];
+          int adj_z = z + adjacent_voxel[2];
+          if (adj_x >= vg.max_x || adj_y >= vg.max_y || adj_z >= vg.max_z ||
+              adj_x < 0 || adj_y < 0 || adj_z < 0) {
+            continue;
+          }
+          if (vg.voxels[adj_x][adj_y][adj_z] != vg.voxels[x][y][z]) {
+            is_boundary = true;
+            break;
+          }
+        }
+      }
+    }
+  }
 }
 
 #endif

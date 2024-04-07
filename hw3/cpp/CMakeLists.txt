@@ -3,6 +3,7 @@ project(hw3)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_OSX_ARCHITECTURES "arm64")
 
 include_directories(${CMAKE_SOURCE_DIR}/include/)
 
@@ -33,6 +34,15 @@ file(GLOB SRC_LIB_FILES src/*.cpp)
 # Exclude main.cpp from the library sources
 list(REMOVE_ITEM SRC_LIB_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
 add_library(${PROJECT_NAME}_lib ${SRC_LIB_FILES})
+
+# Profiling
+option(ENABLE_PROFILING "Enable profiling" OFF)
+if (ENABLE_PROFILING)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+    message(STATUS "Profiling enabled")
+endif ()
+
 
 # Main Executable Target
 add_executable(${PROJECT_NAME} src/main.cpp)

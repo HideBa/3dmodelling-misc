@@ -150,7 +150,18 @@ json export_voxel_to_cityjson(VoxelGrid &vg) {
             // check if there is already a city object whose key looks like
             // "obj{voxel_label}". If exist, add the voxel boundary to the
             // existing city object. If not exist, create a new city object.
-            string city_object_key = object_name_prefix + to_string(room_id);
+            string city_object_key;
+            if (city_object_type == CityObjectType::BuildingRoom) {
+              city_object_key =
+                  object_name_prefix + "room" + to_string(room_id);
+            } else if (!(city_object_type == CityObjectType::UNKOWN)) {
+              city_object_key = object_name_prefix +
+                                city_object_type_to_string(city_object_type);
+            } else {
+              continue;
+              // city_object_key =
+              //     object_name_prefix + voxel_lable_to_string(voxel_label);
+            }
             if (j["CityObjects"].find(city_object_key) !=
                 j["CityObjects"].end()) {
               j["CityObjects"][city_object_key]["geometry"][0]["boundaries"]

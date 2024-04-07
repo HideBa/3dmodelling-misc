@@ -294,6 +294,7 @@ void extract_surface(VoxelGrid &vg,
     for (unsigned int y = 0; y < vg.voxels[x].size(); y++) {
       for (unsigned int z = 0; z < vg.voxels[x][y].size(); z++) {
         bool is_boundary = false;
+        vec<VoxelLabel> neighbour_labels;
         for (const auto &adjacent_voxel : connectivity) {
           int adj_x = x + adjacent_voxel[0];
           int adj_y = y + adjacent_voxel[1];
@@ -302,16 +303,34 @@ void extract_surface(VoxelGrid &vg,
               adj_x < 0 || adj_y < 0 || adj_z < 0) {
             continue;
           }
-          if ((vg.voxels[x][y][z].label == VoxelLabel::INTERSECTED) &&
-              (vg.voxels[adj_x][adj_y][adj_z].label == VoxelLabel::EXTERIOR)) {
+          neighbour_labels.push_back(vg.voxels[adj_x][adj_y][adj_z].label);
+        };
+        if (vg.voxels[x][y][z].label == VoxelLabel::INTERSECTED) {
+          if (find(neighbour_labels.begin(), neighbour_labels.end(),
+                   VoxelLabel::EXTERIOR) != neighbour_labels.end()) {
             vg.voxels[x][y][z].city_object_type = CityObjectType::BuildingPart;
-            break;
-          } else if ((vg.voxels[x][y][z].label == VoxelLabel::INTERSECTED) &&
-                     (vg.voxels[adj_x][adj_y][adj_z].label ==
-                      VoxelLabel::INTERIOR)) {
+            continue;
+          } else if (find(neighbour_labels.begin(), neighbour_labels.end(),
+                          VoxelLabel::INTERIOR) != neighbour_labels.end()) {
             vg.voxels[x][y][z].city_object_type = CityObjectType::BuildingRoom;
-            break;
+          } else {
+            // TODO: check well later
+            vg.voxels[x][y][z].city_object_type = CityObjectType::BuildingPart;
           }
+        } else {
+          continue;
+        }
+      }
+    }
+  }
+}
+
+void assign_semantics(VoxelGrid &vg) {
+  for (unsigned int x = 0; x < vg.voxels.size(); x++) {
+    for (unsigned int y = 0; y < vg.voxels[x].size(); y++) {
+      for (unsigned int z = 0; z < vg.voxels[x][y].size(); z++) {
+        if (!(vg.voxels[x][y][z].label == VoxelLabel::INTERSECTED)) {
+          continue;
         }
       }
     }

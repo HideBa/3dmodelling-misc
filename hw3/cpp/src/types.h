@@ -35,15 +35,19 @@ typedef CGAL::Constrained_triangulation_face_base_2<Kernel> FaceBase;
 typedef CGAL::Triangulation_data_structure_2<VertexBase>
     TriangulationDataStructure;
 
+enum class GeometricSemantics { Roof, Wall, Ground, Other };
+
 // BIM Object
 struct BIMObject {
   string name;
   vec<Triangle3> shells;
-
+  GeometricSemantics sem;
   BIMObject(string name, vec<Triangle3> shells);
 
   BIMObject();
 };
+
+bool is_vertical_surface(vec<Point3> points);
 
 typedef map<string, BIMObject> BIMObjects;
 

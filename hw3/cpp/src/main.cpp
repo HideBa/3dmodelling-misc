@@ -16,7 +16,9 @@ using namespace std;
 int main(int argc, const char *argv[]) {
     vec<pair<string, string>> input_outputs = {
 
-            {"../../input/open_house_ifc4.obj", "../../out/out_open_house.city.json"},
+            {"../../input/open_house_ifc4_2.obj", "../../out/out_open_house.city.json"},
+//            {"../../input/open_house_ifc4.obj", "../../out/out_open_house.city.json"},
+//            {"../../input/wellness_center_sama.obj", "../../out/wellness_center_sama.city.json"},
     };
 
     for (const auto &input_output: input_outputs) {

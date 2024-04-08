@@ -1,5 +1,5 @@
-#ifndef VOXEL_H
-#define VOXEL_H
+#ifndef VOXEL_INFO_H
+#define VOXEL_INFO_H
 
 #include "types.h"
 #include <array>

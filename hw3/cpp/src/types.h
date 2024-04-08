@@ -35,7 +35,15 @@ typedef CGAL::Constrained_triangulation_face_base_2<Kernel> FaceBase;
 typedef CGAL::Triangulation_data_structure_2<VertexBase>
     TriangulationDataStructure;
 
-enum class GeometricSemantics { Roof, Wall, Ground, Other };
+enum class GeometricSemantics {
+  Roof,
+  Wall,
+  InteriorWall,
+  Floor,
+  Window,
+  Door,
+  Other
+};
 
 // BIM Object
 struct BIMObject {

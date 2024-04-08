@@ -1,4 +1,5 @@
 
+#include "bim_obj.cpp"
 #include "cjson.cpp"
 #include "io.cpp"
 #include "types.h"
@@ -14,19 +15,25 @@
 using namespace std;
 
 int main(int argc, const char *argv[]) {
-    vec<pair<string, string>> input_outputs = {
+    vec<vec<string>> input_outputs = {
 
-            {"../../input/open_house_ifc4_2.obj", "../../out/out_open_house.city.json"},
-//            {"../../input/open_house_ifc4.obj", "../../out/out_open_house.city.json"},
-//            {"../../input/wellness_center_sama.obj", "../../out/wellness_center_sama.city.json"},
+            {"../../input/open_house_ifc4_2.obj",
+             "../../out/voxel.obj",
+             "../../out/out_open_house.city.json"},
+
+//            {"../../input/wellness_center_sama.obj",
+//            "../../out/voxel_wellness_sama.obj";
+//                    "../../out/wellness_center_sama.city.json"},
     };
 
     for (const auto &input_output: input_outputs) {
-        std::cout << "Processing: " << input_output.first << std::endl;
+        std::cout << "Processing: " << input_output[0] << std::endl;
         std::ifstream input;
-        input.open(input_output.first);
+        input.open(input_output[0]);
         auto [bim_objects, vertices] = read_obj(input);
         input.close();
+
+        assign_semantics(bim_objects);
 
         cout << "Reading obj finished :" << bim_objects.size() << "faces" << endl;
         auto voxel_grid = create_voxel(vertices, 2, 0.5);
@@ -37,57 +44,13 @@ int main(int argc, const char *argv[]) {
         auto marked_voxel_grid = mark_exterior_interior(intersected_voxel_grid);
 
         extract_surface(marked_voxel_grid);
-        // // count the number of classess
-        // unsigned int class1 = 0;
-        // unsigned int class2 = 0;
-        // unsigned int class3 = 0;
-        // unsigned int class4 = 0;
-        // unsigned int class5 = 0;
-        // unsigned int class6 = 0;
-        // unsigned int class0 = 0;
-        // for (auto x: marked_voxel_grid.voxels) {
-        //     for (auto y: x) {
-        //         for (auto z: y) {
-        //             if (z == 1) {
-        //                 class1++;
-        //             } else if (z == 2) {
-        //                 class2++;
-        //             } else if (z == 3) {
-        //                 class3++;
-        //             } else if (z == 0) {
-        //                 class0++;
-        //             } else if (z == 4) {
-        //                 class4++;
-        //             } else if (z == 5) {
-        //                 class5++;
-        //             } else if (z == 6) {
-        //                 class6++;
-        //             }
-        //         }
-        //     }
-        // }
 
-        // cout << "class 1: " << class1 << endl;
-        // cout << "class 2: " << class2 << endl;
-        // cout << "class 3: " << class3 << endl;
-        // cout << "class 0: " << class0 << endl;
-        // cout << "class 4: " << class4 << endl;
-        // cout << "class 5: " << class5 << endl;
-        // cout << "class 6: " << class6 << endl;
-        // vec<unsigned int> export_classes = {3};
-        // std::string export_classes_str;
-        // for (const auto &cls : export_classes) {
-        //   export_classes_str += std::to_string(cls);
-        // }
 
-        string output_file_name = "../../out/voxel.obj";
-        // std::string output_file_name =
-        //     "../../out/voxel_" + export_classes_str + ".obj";
-        bool res = write_voxel_obj(output_file_name, marked_voxel_grid);
+        bool res = write_voxel_obj(input_output[1], marked_voxel_grid);
 
         json cj = export_voxel_to_cityjson(marked_voxel_grid);
 
-        write_json(cj, input_output.second);
+        write_json(cj, input_output[2]);
     }
 
     //  const char *filename =

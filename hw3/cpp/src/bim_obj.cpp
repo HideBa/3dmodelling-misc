@@ -2,6 +2,7 @@
 #define BIM_OBJ_H
 
 #include "types.h"
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -33,28 +34,40 @@ double calc_average_height(vec<Point3> points) {
   return total_z / points.size();
 }
 
-BIMObjects assign_semantics(BIMObjects &bim_objs) {
+string to_lower_case(const string &str) {
+  string result = str;
+  transform(result.begin(), result.end(), result.begin(), ::tolower);
+  return result;
+}
 
+bool containsSubstring(const string &str, const string &substr) {
+  string strLower = to_lower_case(str);
+  string substrLower = to_lower_case(substr);
+  return strLower.find(substrLower) != string::npos;
+}
+
+void assign_semantics(BIMObjects &bim_objs) {
+  // check if object name contains "wall", "floor", "wall:interior",
+  // "window", "door". If these are contained in the name, assign the
+  // corresponding semantics
   for (auto &bim_obj : bim_objs) {
-    auto &shells = bim_obj.second.shells;
-    vec<Point3> points;
-    for (auto &triangle : shells) {
-      points.push_back(triangle.vertex(0));
-      points.push_back(triangle.vertex(1));
-      points.push_back(triangle.vertex(2));
-    }
-    if (is_vertical_surface(points)) {
+    if (containsSubstring(bim_obj.first, "wall:interior")) {
+      bim_obj.second.sem = GeometricSemantics::InteriorWall;
+    } else if (containsSubstring(bim_obj.first, "floor") ||
+               containsSubstring(bim_obj.first, "footing")) {
+      bim_obj.second.sem = GeometricSemantics::Floor;
+    } else if (containsSubstring(bim_obj.first, "roof")) {
+      bim_obj.second.sem = GeometricSemantics::Roof;
+    } else if (containsSubstring(bim_obj.first, "wall")) {
       bim_obj.second.sem = GeometricSemantics::Wall;
+    } else if (containsSubstring(bim_obj.first, "window")) {
+      bim_obj.second.sem = GeometricSemantics::Window;
+    } else if (containsSubstring(bim_obj.first, "door")) {
+      bim_obj.second.sem = GeometricSemantics::Door;
     } else {
-      double average_height = calc_average_height(points);
-      if (average_height > 0) {
-        bim_obj.second.sem = GeometricSemantics::Roof;
-      } else {
-        bim_obj.second.sem = GeometricSemantics::Ground;
-      }
+      bim_obj.second.sem = GeometricSemantics::Other;
     }
   }
-  return bim_objs;
 }
 
 #endif

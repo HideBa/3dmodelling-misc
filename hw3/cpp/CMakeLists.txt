@@ -21,19 +21,19 @@ else ()
 endif ()
 
 # Fetch Google Test
-include(FetchContent)
-FetchContent_Declare(
-        googletest
-        URL https://github.com/google/googletest/archive/release-1.10.0.zip
-)
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE) # Use shared (DLL) run-time lib even when Google Test is built as static lib.
-FetchContent_MakeAvailable(googletest)
+#include(FetchContent)
+#FetchContent_Declare(
+#        googletest
+#        URL https://github.com/google/googletest/archive/release-1.10.0.zip
+#)
+#set(gtest_force_shared_crt ON CACHE BOOL "" FORCE) # Use shared (DLL) run-time lib even when Google Test is built as static lib.
+#FetchContent_MakeAvailable(googletest)
 
-# Library Target
-file(GLOB SRC_LIB_FILES src/*.cpp)
-# Exclude main.cpp from the library sources
-list(REMOVE_ITEM SRC_LIB_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
-add_library(${PROJECT_NAME}_lib ${SRC_LIB_FILES})
+## Library Target
+#file(GLOB SRC_LIB_FILES src/*.cpp)
+## Exclude main.cpp from the library sources
+#list(REMOVE_ITEM SRC_LIB_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+#add_library(${PROJECT_NAME}_lib ${SRC_LIB_FILES})
 
 # Profiling
 option(ENABLE_PROFILING "Enable profiling" OFF)
@@ -46,10 +46,10 @@ endif ()
 
 # Main Executable Target
 add_executable(${PROJECT_NAME} src/main.cpp)
-target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_lib ${CGAL_LIBRARIES} ${CGAL_3RD_PARTY_LIBRARIES})
+#target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_lib ${CGAL_LIBRARIES} ${CGAL_3RD_PARTY_LIBRARIES})
 
 # Test Executable Target
-add_executable(${PROJECT_NAME}_test src/tests/test_io.cpp)
-target_link_libraries(${PROJECT_NAME}_test gtest_main ${PROJECT_NAME}_lib)
-include(GoogleTest)
-gtest_discover_tests(${PROJECT_NAME}_test)
+#add_executable(${PROJECT_NAME}_test src/tests/test_io.cpp)
+#target_link_libraries(${PROJECT_NAME}_test gtest_main ${PROJECT_NAME}_lib)
+#include(GoogleTest)
+#gtest_discover_tests(${PROJECT_NAME}_test)
